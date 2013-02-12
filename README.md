@@ -1,6 +1,6 @@
 # monads
 
-Yet another clojure library for monads.
+Yet another clojure library for monads. In progress.
 
 ## Usage
 
