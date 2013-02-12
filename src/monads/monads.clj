@@ -119,7 +119,7 @@
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
                         i-zero (-> inner :monadplus :mzero)]
-                    {:mzero (fn [_] (fn [s] i-zero))
+                    {:mzero (fn [s] i-zero)
                      :mplus (fn [leftright]
                               (fn [s]
                                 (i-plus (lazy-pair (run-state-t (state-t inner) (first leftright) s)
@@ -217,7 +217,7 @@
      :monadplus (when (:monadplus inner)
                   (let [i-zero (-> inner :monadplus :mzero)
                         i-plus (-> inner :monadplus :mplus)]
-                    {:mzero (fn [_] (constantly i-zero))
+                    {:mzero (constantly i-zero)
                      :mplus (fn [leftright]
                               (fn [e]
                                 (i-plus (lazy-pair
