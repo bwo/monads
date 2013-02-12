@@ -125,7 +125,7 @@
          (return (f a b)))))
 
 ;; only works on curried fns
-;; (run-monad maybe-m (ap (ap (return (curriedfn #(+ %1 %2))) (return 1)) (return 2)))
+;; (run-monad maybe-m (ap (ap (return (curryfn #(+ %1 %2))) (return 1)) (return 2)))
 ;; #<Just 3>
 (def ap (lift-m-2 (fn [a b] (a b))))
 
@@ -144,7 +144,7 @@
     acc
     (return nil)))
 
-(defmacro curriedfn [& args]
+(defmacro curryfn [& args]
   (let [parsed (parsatron/run (functions/parse-fn-like)
                               (if (and (== 1 (count args))
                                        (#{'fn 'fn*} (ffirst args)))

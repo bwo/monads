@@ -84,8 +84,8 @@
 (defmonad state-m
   :return state-return
   :bind state-bind
-  :monadstate {:get-state (fn [_] (fn [s] (Pair. s s)))
-               :put-state (fn [v] (fn [_] (Pair. nil v)))})
+  :monadstate {:get-state (curryfn [_ s] (Pair. s s))
+               :put-state (curryfn [v _] (Pair. nil v))})
 (declare state-t)
 
 (defn run-state-t [m computation initial-state]
@@ -94,7 +94,7 @@
 (defn- state-t* [inner]
   (let [i-return (:return inner)]
     (monad
-     :return (fn [x] (fn [s] (i-return (Pair. x s))))
+     :return (curryfn [x s] (i-return (Pair. x s)))
      :bind (fn [m f]
              (fn [s]
                (run-monad
@@ -104,23 +104,23 @@
                  let v = (.fst p) s = (.snd p)
                  (run-state-t (state-t inner)
                               (f v) s)))))
-     :monadstate {:get-state (fn [_] (fn [s] (i-return  (Pair. s s))))
-                  :put-state (fn [v] (fn [s] (i-return  (Pair. nil v))))}
+     :monadstate {:get-state (curryfn [_ s] (i-return (Pair. s s)))
+                  :put-state (curryfn [v s] (i-return  (Pair. nil v)))}
      :monadfail (when (:monadfail inner)
                   {:mfail (fn [str] (fn [_] ((-> inner :monadfail :mfail) str)))})
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
                         i-zero ((-> inner :monadplus :mzero) nil)]
                     {:mzero (fn [_] (fn [s] i-zero))
-                     :mplus (fn [leftright]
-                              (fn [s]
-                                (i-plus (lazy-pair (run-state-t (state-t inner) (first leftright) s)
-                                                   (run-state-t (state-t inner) (second leftright) s)))))}))
-     :monadtrans {:lift (fn [m]
-                          (fn [s]
-                            (run-monad inner (mdo
-                                              v <- m
-                                              (return (Pair. v s))))))})))
+                     :mplus (curryfn [leftright s]
+                              (i-plus
+                               (lazy-pair
+                                (run-state-t (state-t inner) (first leftright) s)
+                                (run-state-t (state-t inner) (second leftright) s))))}))
+     :monadtrans {:lift (curryfn [m s]
+                          (run-monad inner (mdo
+                                            v <- m
+                                            (return (Pair. v s)))))})))
 
 (def state-t (memoize state-t*))
 
@@ -200,20 +200,17 @@
                            a <- (m e)
                            (run-reader-t (reader-t inner) (f a) e)))))
      :monadreader {:ask (fn [_] i-return)
-                   :asks #_(comp i-return %)
-                   (fn [f] (fn [e] (i-return (f e))))
-                   :local (fn [[f m]]
-                            (fn [e]
-                              (run-reader-t (reader-t inner) m (f e))))}
+                   :asks #(comp i-return %)
+                   :local (curryfn [[f m] e]
+                            (run-reader-t (reader-t inner) m (f e)))}
      :monadtrans {:lift constantly}
      :monadplus (when (:monadplus inner)
                   (let [i-zero ((-> inner :monadplus :mzero) nil)
                         i-plus (-> inner :monadplus :mplus)]
                     {:mzero (fn [_] (constantly i-zero))
-                     :mplus (fn [leftright]
-                              (fn [e]
-                                (i-plus (lazy-pair
-                                         (run-reader-t (reader-t inner) (first leftright) e)
-                                         (run-reader-t (reader-t inner) (second leftright) e)))))})))))
+                     :mplus (curryfn [leftright e] 
+                              (i-plus (lazy-pair
+                                       (run-reader-t (reader-t inner) (first leftright) e)
+                                       (run-reader-t (reader-t inner) (second leftright) e))))})))))
 
 (def reader-t (memoize reader-t*))
