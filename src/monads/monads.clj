@@ -118,8 +118,8 @@
                   {:mfail (fn [str] (fn [_] ((-> inner :monadfail :mfail) str)))})
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
-                        i-zero (-> inner :monadplus :mzero)]
-                    {:mzero (fn [s] i-zero)
+                        i-zero ((-> inner :monadplus :mzero) nil)]
+                    {:mzero (fn [_] (fn [s] i-zero))
                      :mplus (fn [leftright]
                               (fn [s]
                                 (i-plus (lazy-pair (run-state-t (state-t inner) (first leftright) s)
@@ -215,9 +215,9 @@
                               (run-reader-t (reader-t inner) m (f e))))}
      :monadtrans {:lift constantly}
      :monadplus (when (:monadplus inner)
-                  (let [i-zero (-> inner :monadplus :mzero)
+                  (let [i-zero ((-> inner :monadplus :mzero) nil)
                         i-plus (-> inner :monadplus :mplus)]
-                    {:mzero (constantly i-zero)
+                    {:mzero (fn [_] (constantly i-zero))
                      :mplus (fn [leftright]
                               (fn [e]
                                 (i-plus (lazy-pair
