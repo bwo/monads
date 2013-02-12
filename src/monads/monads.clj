@@ -32,7 +32,7 @@
           (if (nothing? m)
             m
             (f (.v m))))
-  :monadplus {:mzero nothing
+  :monadplus {:mzero (fn [_] nothing)
               :mplus (fn [leftright]
                        (let [lv (run-monad maybe-m (first leftright))]
                          (if (just? lv)
@@ -126,8 +126,9 @@
                                                    (run-state-t (state-t inner) (second leftright) s)))))}))
      :monadtrans {:lift (fn [m]
                           (fn [s]
-                            (run-monad inner
-                                       (>>= m (fn [v] (Pair. v s))))))})))
+                            (run-monad inner (mdo
+                                              v <- m
+                                              (return (Pair. v s))))))})))
 
 (def state-t (memoize state-t*))
 
