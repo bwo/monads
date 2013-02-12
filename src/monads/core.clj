@@ -81,6 +81,16 @@
 (defn asks [f] (MonadOp. [:monadreader :asks] f))
 (defn local [f m] (MonadOp. [:monadreader :local] [f m]))
 
+;; monadstate
+(def get-state
+  (MonadOp. [:monadstate :get-state] nil))
+
+(defn put-state [v]
+  (MonadOp. [:monadstate :put-state] v))
+
+(defn modify [f] (>>= get-state (comp put-state f)))
+
+
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]

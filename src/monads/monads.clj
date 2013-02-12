@@ -81,14 +81,6 @@
           s' (.snd p)]
       (run-state (f v) s'))))
 
-(def get-state
-  (MonadOp. [:monadstate :get-state] nil))
-
-(defn put-state [v]
-  (MonadOp. [:monadstate :put-state] v))
-
-(defn modify [f] (>>= get-state (comp put-state f)))
-
 (defmonad state-m
   :return state-return
   :bind state-bind
