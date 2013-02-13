@@ -237,8 +237,25 @@
             ((run-monad cont-m2
                         (m f)) r))))
 
+(defn cont-t [inner]
+  (let [i-return (:return inner)]
+    (monad
+     :return (curryfn [r c] (Cont. c r))
+     :bind (fn [m f]
+             (fn [r]
+               (Cont. m (fn [v] (Cont. (f v) r)))))
+     :monadtrans {:lift (fn [m]
+                          (fn [c]
+                            (c (run-monad inner m))))})))
+
 (defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]
     (if (cont? m)
       (recur (.c m) (.v m))
       m)))
+
+(defn run-cont-t [m comp cont]
+  (let [comp ((run-monad m comp) cont)]
+    (if (cont? comp)
+      (recur m (.c comp) (.v comp))
+      comp)))
