@@ -244,9 +244,8 @@
      :bind (fn [m f]
              (fn [r]
                (Cont. m (fn [v] (Cont. (f v) r)))))
-     :monadtrans {:lift (fn [m]
-                          (fn [c]
-                            (c (run-monad inner m))))})))
+     :monadtrans {:lift (curryfn [m c]
+                          (c (run-monad inner m)))})))
 
 (defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]
