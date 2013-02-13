@@ -235,8 +235,7 @@
   :bind (fn [m f]
           (fn [r]
             ((run-monad cont-m2
-                        (m (fn [v]
-                             (f v)))) r))))
+                        (m f)) r))))
 
 (defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]
