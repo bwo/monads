@@ -214,3 +214,32 @@
                                        (run-reader-t (reader-t inner) (second leftright) e))))})))))
 
 (def reader-t (memoize reader-t*))
+
+(deftype Cont [c v]
+    Object
+  (toString [this]
+    (with-out-str (print [c v]))))
+
+(defn- cont? [o]
+  (instance? Cont o))
+
+(defmonad cont-m
+  :return (curryfn [r c] (Cont. c r))
+  :bind (fn [m f]
+          (fn [r]
+            (Cont. m (fn [v] (Cont. (f v) r))))))
+
+;; this is faster, but blows the stack.
+(defmonad cont-m2
+  :return (curryfn [r c] (c r))
+  :bind (fn [m f]
+          (fn [r]
+            ((run-monad cont-m2
+                        (m (fn [v]
+                             (f v)))) r))))
+
+(defn run-cont [m c]
+  (let [m ((run-monad cont-m m) c)]
+    (if (cont? m)
+      (recur (.c m) (.v m))
+      m)))
