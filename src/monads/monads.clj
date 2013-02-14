@@ -244,8 +244,8 @@
     (assoc cont-m
       :monadtrans {:lift (curryfn [m c] (c (run-monad inner m)))})))
 
-(defn run-cont [m]
-  (let [m ((run-monad cont-m m) identity)]
+(defn run-cont [m & [c]]
+  (let [m ((run-monad cont-m m) (or c identity))]
     (if (cont? m)
       (recur (.c m) (.v m))
       m)))
