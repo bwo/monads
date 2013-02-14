@@ -38,9 +38,10 @@
 (defn >>= [m f]
   ;; may want to remove this micro-optimization since having it in
   ;; might obscure the broken-ness of broken monad impls
-  (if (return? m)
-    (f (.v m))
-    (Bind. m f)))
+  (cond
+   (return? m) (f (.v m))
+   (return? f) m
+   :else (Bind. m f)))
 
 (defn run-monad [m computation]
   (cond
