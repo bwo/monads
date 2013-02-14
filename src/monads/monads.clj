@@ -18,7 +18,7 @@
 (defn just? [v]
   (instance? Just v))
 
-(defn from-just [v]
+(defn from-just [^Just v]
   (cond
    (just? v) (.v v)
    (nothing? v) (throw (Exception. "Can't get something from nothing!"))
@@ -66,17 +66,23 @@
   (toString [this]
     (with-out-str (print [fst snd]))))
 
+(defn fst [^Pair o] (.fst o))
+(defn snd [^Pair o] (.snd o))
+
 (declare state-m)
 
 (defn run-state [comp initial-state]
   ((run-monad state-m comp) initial-state))
+
+(def eval-state (comp fst run-state))
+(def exec-state (comp snd run-state))
 
 (defn state-return [x]
   (fn inner-state-return [s] (Pair. x s)))
 
 (defn state-bind [m f]
   (fn inner-state-bind [s]
-    (let [p (m s)
+    (let [^Pair p (m s)
           v (.fst p)
           s' (.snd p)]
       (run-state (f v) s'))))
@@ -100,7 +106,7 @@
                (run-monad
                 inner
                 (mdo
-                 p <- (m s)
+                 ^Pair p <- (m s)
                  let v = (.fst p) s = (.snd p)
                  (run-state-t (state-t inner)
                               (f v) s)))))
@@ -259,3 +265,29 @@
     (if (cont? comp)
       (recur m (.c comp) (.v comp))
       comp)))
+
+
+;; tree-numbering.
+;; Our trees: {:val int :left tree :right tree}, or nil
+(defn node [v left right]
+  {:val v :left left :right right})
+(defn index-in-list [p lst]
+  (second (first (filter (comp p first) (map vector lst (range))))))
+(defn n-node [x table]
+  (if-let [i (index-in-list (partial = x) table)]
+    [table i]
+    [(conj table x) (count table)]))
+(defn number-node [x]
+  (mdo table <- get-state
+       let [newtable newpos] = (n-node x table)
+       (put-state newtable)
+       (return newpos)))
+(defn number-tree [{:keys [val left right] :as tree}]
+  (if-not tree
+    (return nil)
+    (mdo num <- (number-node val)
+         nt1 <- (number-tree left)
+         nt2 <- (number-tree right)
+         (return (node num nt1 nt2)))))
+(defn num-tree [t]
+  (eval-state (number-tree t) []))
