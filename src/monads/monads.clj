@@ -227,7 +227,9 @@
   :return (curryfn [r c] (Cont. c r))
   :bind (fn [m f]
           (fn [r]
-            (Cont. m (fn [v] (Cont. (f v) r))))))
+            (Cont. m (fn [v] (Cont. (f v) r)))))
+  :monadcont {:callcc (curryfn [f c]
+                        (Cont. (f (curryfn [v _] (Cont. c v))) c))})
 
 ;; this is faster, but blows the stack.
 (defmonad cont-m2
@@ -239,13 +241,8 @@
 
 (defn cont-t [inner]
   (let [i-return (:return inner)]
-    (monad
-     :return (curryfn [r c] (Cont. c r))
-     :bind (fn [m f]
-             (fn [r]
-               (Cont. m (fn [v] (Cont. (f v) r)))))
-     :monadtrans {:lift (curryfn [m c]
-                          (c (run-monad inner m)))})))
+    (assoc cont-m
+      :monadtrans {:lift (curryfn [m c] (c (run-monad inner m)))})))
 
 (defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]

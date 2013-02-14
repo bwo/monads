@@ -90,6 +90,10 @@
 
 (defn modify [f] (>>= get-state (comp put-state f)))
 
+;; monadcont
+
+(defn callcc [f]
+  (MonadOp. [:monadcont :callcc] f))
 
 ;;; utils
 
