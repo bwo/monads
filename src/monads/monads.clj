@@ -130,14 +130,6 @@
 (defn left [x]
   {:val x :type ::left})
 
-(defmonad either-m
-  :bind (fn [m f]
-          (if (= ::left (:type m))
-            m
-            (f (:val m))))
-  :return right
-  :monadfail {:mfail left})
-
 (defn either [onleft onright e]
   ((case (:type e)
      ::right onright
@@ -151,6 +143,18 @@
 
 (defn right? [e] (= ::right (:type e)))
 (defn left? [e] (= ::left (:type e)))
+
+(defmonad either-m
+  :bind (fn [m f]
+          (if (= ::left (:type m))
+            m
+            (f (:val m))))
+  :return right
+  :monadfail {:mfail left}
+  :monaderror {:throw-error left
+               :catch-error (fn [[m handler]]
+                              (let [r (run-monad either-m m)]
+                                (either #(run-monad either-m (handler %)) identity r)))})
 
 (defmonad identity-m
   :bind (fn [m f] (f m))

@@ -96,6 +96,13 @@
 (defn callcc [f]
   (MonadOp. [:monadcont :callcc] f))
 
+;; monaderror
+(defn throw-error [e]
+  (MonadOp. [:monaderror :throw-error] e))
+
+(defn catch-error [m handler]
+  (MonadOp. [:monaderror :catch-error] [m handler]))
+
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]
