@@ -5,10 +5,8 @@
 (defmacro lazy-pair [a b]
   `(lazy-seq (cons ~a (lazy-seq (cons ~b '())))))
 
-(def nothing ::nothing)
-
-(defn nothing? [v]
-  (= v nothing))
+(def nothing nil)
+(def nothing? nil?)
 
 (deftype Just [v]
   Object
@@ -32,13 +30,11 @@
           (if (nothing? m)
             m
             (f (.v m))))
-  :monadplus {:mzero (fn [_] nothing)
+  :monadplus {:mzero (constantly nothing)
               :mplus (fn [leftright]
                        (let [lv (run-monad maybe-m (first leftright))]
-                         (if (just? lv)
-                           lv
-                           (run-monad maybe-m (second leftright)))))}
-  :monadfail {:mfail (fn [_] nothing)})
+                         (or lv (run-monad maybe-m (second leftright)))))}
+  :monadfail {:mfail (constantly nothing)})
 
 (defn maybe-t [inner]
   (let [i-return (:return inner)]
