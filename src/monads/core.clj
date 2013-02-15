@@ -103,6 +103,14 @@
 (defn catch-error [m handler]
   (MonadOp. [:monaderror :catch-error] [m handler]))
 
+;; writer
+(defn tell [w]
+  (MonadOp. [:monadwriter :tell] w))
+(defn listen [m]
+  (MonadOp. [:monadwriter :listen] m))
+(defn pass [m]
+  (MonadOp. [:monadwriter :pass] m))
+
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]

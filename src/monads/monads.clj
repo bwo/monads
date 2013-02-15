@@ -1,9 +1,14 @@
 (ns monads.monads
   (:require [monads.core :refer :all])
-  (:import [monads.core MonadOp]))
+  (:import [monads.core MonadOp])
+  (:use [babbage.monoid :only [<>]]))
 
 (defmacro lazy-pair [a b]
   `(lazy-seq (cons ~a (lazy-seq (cons ~b '())))))
+
+(defmonad identity-m
+  :bind (fn [m f] (f m))
+  :return identity)
 
 (def nothing nil)
 (def nothing? nil?)
@@ -24,18 +29,6 @@
 
 (def just #(Just. %))
 
-(defmonad maybe-m
-  :return just
-  :bind (fn [m f]
-          (if (nothing? m)
-            m
-            (f (.v m))))
-  :monadplus {:mzero (constantly nothing)
-              :mplus (fn [leftright]
-                       (let [lv (run-monad maybe-m (first leftright))]
-                         (or lv (run-monad maybe-m (second leftright)))))}
-  :monadfail {:mfail (constantly nothing)})
-
 (defn maybe-t [inner]
   (let [i-return (:return inner)]
     (monad
@@ -49,7 +42,14 @@
                  (i-return nothing)
                  (f (.v v))))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
-     :monadtrans {:lift (lift-m just)})))
+     :monadtrans {:lift (lift-m just)}
+     :monadplus {:mzero (fn [_] (i-return nothing))
+                 :mplus (fn [lr]
+                          (let [lv (run-monad (maybe-t inner) (first lr))]
+                            (or lv
+                                (run-monad (maybe-t inner) (second lr)))))})))
+
+(def maybe-m (maybe-t identity-m))
 
 (deftype Pair [fst snd]
   Object
@@ -65,29 +65,6 @@
 (defn fst [^Pair o] (.fst o))
 (defn snd [^Pair o] (.snd o))
 
-(declare state-m)
-
-(defn run-state [comp initial-state]
-  ((run-monad state-m comp) initial-state))
-
-(def eval-state (comp fst run-state))
-(def exec-state (comp snd run-state))
-
-(defn state-return [x]
-  (fn inner-state-return [s] (Pair. x s)))
-
-(defn state-bind [m f]
-  (fn inner-state-bind [s]
-    (let [^Pair p (m s)
-          v (.fst p)
-          s' (.snd p)]
-      (run-state (f v) s'))))
-
-(defmonad state-m
-  :return state-return
-  :bind state-bind
-  :monadstate {:get-state (curryfn [_ s] (Pair. s s))
-               :put-state (curryfn [v _] (Pair. nil v))})
 (declare state-t)
 
 (defn run-state-t [m computation initial-state]
@@ -103,7 +80,7 @@
                 inner
                 (mdo
                  ^Pair p <- (m s)
-                 let v = (.fst p) s = (.snd p)
+                 let v = (fst p) s = (snd p)
                  (run-state-t (state-t inner)
                               (f v) s)))))
      :monadstate {:get-state (curryfn [_ s] (i-return (Pair. s s)))
@@ -125,6 +102,14 @@
                                             (return (Pair. v s)))))})))
 
 (def state-t (memoize state-t*))
+
+(def state-m (state-t identity-m))
+
+(defn run-state [computation initial-state]
+  (run-state-t (state-t identity-m) computation initial-state))
+
+(def eval-state (comp fst run-state))
+(def exec-state (comp snd run-state))
 
 ;;; let's lay off the deftypes for this one
 (defn right [x]
@@ -158,10 +143,7 @@
                               (let [r (run-monad either-m m)]
                                 (either #(run-monad either-m (handler %)) identity r)))})
 
-(defmonad identity-m
-  :bind (fn [m f] (f m))
-  :return identity)
-
+;; list-t is not always a correct transformer. Omitted.
 (defmonad list-m
   :return list
   :bind (fn [m f]
@@ -173,25 +155,12 @@
                        (concat (run-monad list-m (first leftright))
                                (run-monad list-m (second leftright))))})
 
-(declare run-reader)
-
-(defmonad reader-m
-  :return constantly
-  :bind (fn [m f] ;; (e -> a) -> (a -> (e -> b)) -> (e -> b) / the "s" combinator
-          (fn [e]
-            (let [a (m e)]
-              (run-reader (f a) e))))
-  :monadreader {:ask (fn [_] identity)
-                :asks identity
-                :local (fn [[f m]]
-                         (fn [e]
-                           (run-reader m (f e))))})
 
 (defn run-reader-t [m comp e]
   ((run-monad m comp) e))
 
 (defn run-reader [comp e]
-  ((run-monad reader-m comp) e))
+  (run-reader-t reader-m comp e))
 
 (declare reader-t)
 
@@ -220,6 +189,7 @@
                                        (run-reader-t (reader-t inner) (second leftright) e))))})))))
 
 (def reader-t (memoize reader-t*))
+(def reader-m (reader-t identity-m))
 
 (deftype Cont [c v]
     Object
@@ -262,6 +232,23 @@
       (recur m (.c comp) (.v comp))
       comp)))
 
+(defmonad writer-m
+  :return (fn [v] (Pair. v nil))
+  :bind (fn [m f]
+          (let [^Pair m (run-monad writer-m m)
+                ^Pair m' (run-monad writer-m (f (fst m)))]
+            (Pair. (fst m') (<> (snd m) (snd m')))))
+  :monadwriter {:tell (partial ->Pair nil)
+                :listen (fn [m]
+                          (let [p (run-monad writer-m m)]
+                            (Pair. p (snd p))))})
+
+(defn listens [f m]
+  (mdo p <- (listen m)
+       (return (fst p) (f (snd p)))))
+(defn censor [f m]
+  (pass (mdo a <- m
+             (return (a, f)))))
 
 ;; tree-numbering.
 ;; Our trees: {:val int :left tree :right tree}, or nil
@@ -287,3 +274,4 @@
          (return (node num nt1 nt2)))))
 (defn num-tree [t]
   (eval-state (number-tree t) []))
+
