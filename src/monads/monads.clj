@@ -86,11 +86,11 @@
      :monadstate {:get-state (curryfn [_ s] (i-return (Pair. s s)))
                   :put-state (curryfn [v s] (i-return  (Pair. nil v)))}
      :monadfail (when (:monadfail inner)
-                  {:mfail (fn [str] (fn [_] ((-> inner :monadfail :mfail) str)))})
+                  {:mfail (curryfn [str _] ((-> inner :monadfail :mfail) str))})
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
                         i-zero ((-> inner :monadplus :mzero) nil)]
-                    {:mzero (fn [_] (fn [s] i-zero))
+                    {:mzero (curryfn [_ _] i-zero)
                      :mplus (curryfn [leftright s]
                               (i-plus
                                (lazy-pair
@@ -176,9 +176,6 @@
 (defn run-reader-t [m comp e]
   ((run-monad m comp) e))
 
-(defn run-reader [comp e]
-  (run-reader-t reader-m comp e))
-
 (declare reader-t)
 
 (defn- reader-t* [inner]
@@ -207,6 +204,9 @@
 
 (def reader-t (memoize reader-t*))
 (def reader-m (reader-t identity-m))
+
+(defn run-reader [comp e]
+  (run-reader-t reader-m comp e))
 
 (deftype Cont [c v]
     Object
