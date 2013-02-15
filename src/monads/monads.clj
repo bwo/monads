@@ -235,9 +235,10 @@
 (defn cont-t [inner]
   (let [i-return (:return inner)]
     (assoc cont-m
-      :monadtrans {:lift (curryfn [m c] (c (run-monad inner m)))})))
+      :monadtrans {:lift (curryfn [m c] (run-monad inner (>>= m c)))
+                   #_(curryfn [m c] (c (run-monad inner m)))})))
 
-(defn run-cont [m & c]
+(defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]
     (if (cont? m)
       (recur (.c m) (.v m))
