@@ -141,7 +141,14 @@
                                x <- (run-monad (error-t inner) m)
                                (either (comp i-return left)
                                        #(run-monad (error-t inner) (f %)) x))))
+     :monadtrans {:lift (fn [m] (run-monad inner (>>= m (comp i-return right))))}
      :monadfail {:mfail (comp i-return left)}
+     :monadplus {:mzero (fn [_] (i-return (left nil)))
+                 :mplus (fn [lr]
+                          (run-monad inner (mdo l <- (run-monad (error-t inner) (first lr))
+                                                (if (left? l)
+                                                  (run-monad (error-t inner) (second lr))
+                                                  l))))}
      :monaderror {:throw-error (comp i-return left)
                   :catch-error
                   (fn [[m handler]]
