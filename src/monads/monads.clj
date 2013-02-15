@@ -131,17 +131,27 @@
 (defn right? [e] (= ::right (:type e)))
 (defn left? [e] (= ::left (:type e)))
 
-(defmonad either-m
-  :bind (fn [m f]
-          (if (= ::left (:type m))
-            m
-            (f (:val m))))
-  :return right
-  :monadfail {:mfail left}
-  :monaderror {:throw-error left
-               :catch-error (fn [[m handler]]
-                              (let [r (run-monad either-m m)]
-                                (either #(run-monad either-m (handler %)) identity r)))})
+(declare error-t)
+(defn error-t* [inner]
+  (let [i-return (:return inner)]
+    (monad
+     :return (comp i-return right)
+     :bind (fn [m f]
+             (run-monad inner (mdo
+                               x <- (run-monad (error-t inner) m)
+                               (either (comp i-return left)
+                                       #(run-monad (error-t inner) (f %)) x))))
+     :monadfail {:mfail (comp i-return left)}
+     :monaderror {:throw-error (comp i-return left)
+                  :catch-error
+                  (fn [[m handler]]
+                    (run-monad
+                     inner (mdo r <- (run-monad (error-t inner) m)
+                                (either #(run-monad (error-t inner) (handler %))
+                                        (comp i-return right)
+                                        r))))})))
+(def error-t (memoize error-t*))
+(def error-m (error-t identity-m))
 
 ;; list-t is not always a correct transformer. Omitted.
 (defmonad list-m
