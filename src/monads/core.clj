@@ -5,56 +5,66 @@
             [macroparser.bindings :as bindings]
             [macroparser.monads :as parser]))
 
+(set! *warn-on-reflection* true)
+
+(declare run-monad)
+
+(defprotocol MRun
+  (mrun [this m]))
+
+(extend-protocol MRun
+  Object
+  (mrun [this _] this)
+  nil
+  (mrun [this _] nil))
+
 (deftype Return [v]
   Object
   (toString [this]
-    (with-out-str (print v))))
+    (with-out-str (print v)))
+  MRun
+  (mrun [_ m] ((:return m) v)))
 
-(deftype Bind [m f]
+(deftype Returned [v]
   Object
   (toString [this]
-    (with-out-str (print [m f]))))
+    (with-out-str (print v)))
+  MRun
+  (mrun [_ m] (v m)))
+
+(deftype Bind [comp f]
+  Object
+  (toString [this]
+    (with-out-str (print [comp f])))
+  MRun
+  (mrun [_ m]  ((:bind m) (run-monad m comp) f)))
 
 (deftype MonadOp [path obj]
   Object
   (toString [this]
-    (with-out-str (print [path obj]))))
-
-(defn- monad-op? [o]
-  (instance? MonadOp o))
-
-(defn >> [m c]
-  (Bind. m (fn [_] c)))
+    (with-out-str (print [path obj])))
+  MRun
+  (mrun [_ m]
+    ((get-in m path) obj)))
 
 (defn return [x]
   (Return. x))
 
-(defn- bind? [o]
-  (instance? Bind o))
-
-(defn- return? [o]
-  (instance? Return o))
+(defn get-return [^Return o]
+  (.v o))
 
 (defn >>= [m f]
-  ;; may want to remove this micro-optimization since having it in
-  ;; might obscure the broken-ness of broken monad impls
+  ;; test: does this actually speed anything up?
   (cond
-   (return? m) (f (.v m))
-   (return? f) m
+   (instance? Return m) (f (get-return m))
+   (instance? Return f) m
    :else (Bind. m f)))
 
+(defn >> [m c]
+  (>>= m (fn [_] c)))
+
 (defn run-monad [m computation]
-  (cond
-   (bind? computation)
-   ;; Note: currently this creates nested calls equal to the number of
-   ;; binds nested on the left. (In normal usage, however, this should
-   ;; not be a big deal.)
-   (recur m ((:bind m) (run-monad m (.m computation)) (.f computation)))
-   (return? computation)
-   ((:return m) (.v computation))
-   (monad-op? computation)
-   ((get-in m (.path computation)) (.obj computation))
-   :else computation))
+  (mrun computation m))
 
 (defmacro monad [& {:as params}]
   `(let [params# (s/rename-keys ~params {:>>= :bind})]
@@ -81,15 +91,6 @@
 (def ask (MonadOp. [:monadreader :ask] nil))
 (defn asks [f] (MonadOp. [:monadreader :asks] f))
 (defn local [f m] (MonadOp. [:monadreader :local] [f m]))
-
-;; monadstate
-(def get-state
-  (MonadOp. [:monadstate :get-state] nil))
-
-(defn put-state [v]
-  (MonadOp. [:monadstate :put-state] v))
-
-(defn modify [f] (>>= get-state (comp put-state f)))
 
 ;; monadcont
 
@@ -129,9 +130,9 @@
 (defmacro run-mdo [m & exprs]
   `(run-monad ~m (mdo ~@exprs)))
 
-(defn lift-m [f]
-  (fn [m]
-    (>>= m (comp return f))))
+(defn lift-m
+  ([f] #(lift-m f %))
+  ([f m] (>>= m (comp return f))))
 
 (defn sequence-m [ms]
   (reduce (fn [m-acc m]
@@ -141,20 +142,24 @@
           (return [])
           ms))
 
-(defn lift-m-2 [f]
-  (fn [m1 m2]
-    (mdo a <- m1
-         b <- m2
-         (return (f a b)))))
+(defn lift-m-2
+  ([f] #(lift-m-2 f %))
+  ([f m] #(lift-m-2 f m %))
+  ([f m1 m2]     
+     (mdo a <- m1
+          b <- m2
+          (return (f a b)))))
 
-;; only works on curried fns
+;; only works on curried fns, alas
 ;; (run-monad maybe-m (ap (ap (return (curryfn #(+ %1 %2))) (return 1)) (return 2)))
 ;; #<Just 3>
 (def ap (lift-m-2 (fn [a b] (a b))))
 
-(defn lift-m* [f & m-args]
-  (mdo args <- (sequence-m m-args)
-       (return (apply f args))))
+(defn lift-m*
+  ([f] (fn [& m-args] (apply lift-m* f m-args)))
+  ([f & m-args]
+      (mdo args <- (sequence-m m-args)
+           (return (apply f args)))))
 
 (defn fold-m [f acc xs]
   (if (empty? xs)
@@ -162,10 +167,15 @@
     (mdo a <- (f acc (first xs))
          (fold-m f a (rest xs)))))
 
-(defn guard [p acc]
+(defn mwhen [p acc]
   (if p
     acc
     (return nil)))
+
+(defn guard [p]
+  (if p
+    (return nil)
+    mzero))
 
 (defmacro curryfn [& args]
   (let [parsed (parsatron/run (functions/parse-fn-like)

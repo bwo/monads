@@ -1,7 +1,9 @@
 (ns monads.monads
   (:require [monads.core :refer :all])
-  (:import [monads.core MonadOp])
+  (:import [monads.core Returned])
   (:use [babbage.monoid :only [<>]]))
+
+(set! *warn-on-reflection* true)
 
 (defmacro lazy-pair [a b]
   `(lazy-seq (cons ~a (lazy-seq (cons ~b '())))))
@@ -37,9 +39,9 @@
                              v <- m
                              (if (nothing? v)
                                (i-return nothing)
-                               (f (.v v)))))
+                               (f (from-just v)))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
-     :monadtrans {:lift (lift-m just)}
+     :monadtrans {:lift (partial lift-m just)}
      :monadplus {:mzero (fn [_] (i-return nothing))
                  :mplus (fn [lr]
                           (let [lv (run-monad (maybe-t inner) (first lr))]
@@ -50,12 +52,6 @@
 
 (deftype Pair [fst snd]
   Object
-  (equals [this other]
-    (and (instance? Pair other)
-         (= fst (.fst other))
-         (= snd (.snd other))))
-  (hashCode [this]
-    (.hashCode [fst snd]))
   (toString [this]
     (with-out-str (print [fst snd]))))
 
@@ -70,6 +66,7 @@
 (defn- state-t* [inner]
   (let [i-return (:return inner)]
     (monad
+     :inner inner
      :return (curryfn [x s] (i-return (Pair. x s)))
      :bind (fn [m f]
              (fn [s]
@@ -78,8 +75,6 @@
                         let v = (fst p) s = (snd p)
                         (run-state-t (state-t inner)
                                      (f v) s))))
-     :monadstate {:get-state (curryfn [_ s] (i-return (Pair. s s)))
-                  :put-state (curryfn [v s] (i-return  (Pair. nil v)))}
      :monadfail (when (:monadfail inner)
                   {:mfail (curryfn [str _] ((-> inner :monadfail :mfail) str))})
      :monadplus (when (:monadplus inner)
@@ -96,6 +91,10 @@
                                    v <- m
                                    (return (Pair. v s))))})))
 
+(def get-state (Returned. (curryfn [m s] ((-> m :inner :return) (Pair. s s)))))
+(defn put-state [v] (Returned. (curryfn [m s] ((-> m :inner :return) (Pair. nil v)))))
+(defn modify [f] (>>= get-state (comp put-state f)))
+
 (def state-t (memoize state-t*))
 
 (def state-m (state-t identity-m))
@@ -105,6 +104,10 @@
 
 (def eval-state (comp fst run-state))
 (def exec-state (comp snd run-state))
+(defn exec-state-t [m comp initial-state]
+  (run-monad (:inner m) (lift-m snd (run-state-t m comp initial-state))))
+(defn eval-state-t [m comp initial-state]
+  (run-monad (:inner m) (lift-m fst (run-state-t m comp initial-state))))
 
 ;;; let's lay off the deftypes for this one
 (defn right [x]
@@ -156,13 +159,19 @@
 (def error-t (memoize error-t*))
 (def error-m (error-t identity-m))
 
+(defn flatten-1
+  [seqs]
+  (lazy-seq
+   (when-let [s (seq seqs)]
+     (concat (first s) (flatten-1 (rest s))))))
+
 ;; list-t is not always a correct transformer. Omitted.
 (defmonad list-m
   :return list
   :bind (fn [m f]
           ;; inelegant: since f may return objects wrapped in Return
           ;; or singleton lists, we have to extract the results here.
-          (mapcat (comp (partial run-monad list-m) f)  m))
+          (flatten* (map (comp (partial run-monad list-m) f)  m)))
   :monadplus {:mzero (fn [_] ())
               :mplus (fn [leftright]
                        (concat (run-monad list-m (first leftright))
@@ -192,7 +201,7 @@
                   (let [i-zero ((-> inner :monadplus :mzero) nil)
                         i-plus (-> inner :monadplus :mplus)]
                     {:mzero (fn [_] (constantly i-zero))
-                     :mplus (curryfn [leftright e] 
+                     :mplus (curryfn [leftright e]
                               (i-plus (lazy-pair
                                        (run-reader-t (reader-t inner) (first leftright) e)
                                        (run-reader-t (reader-t inner) (second leftright) e))))})))))
@@ -207,6 +216,11 @@
     Object
   (toString [this]
     (with-out-str (print [c v]))))
+
+(defn get-cont [^Cont c]
+  (.c c))
+(defn get-arg [^Cont c]
+  (.v c))
 
 (defn- cont? [o]
   (instance? Cont o))
@@ -236,13 +250,13 @@
 (defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]
     (if (cont? m)
-      (recur (.c m) (.v m))
+      (recur (get-cont m) (get-arg m))
       m)))
 
 (defn run-cont-t [m comp cont]
   (let [comp ((run-monad m comp) cont)]
     (if (cont? comp)
-      (recur m (.c comp) (.v comp))
+      (recur m (get-cont comp) (get-arg comp))
       comp)))
 
 (defmonad writer-m
