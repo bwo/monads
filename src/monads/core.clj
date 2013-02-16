@@ -126,6 +126,9 @@
     (assert (= :normal (:type (first parsed))) "Last expression in mdo must be a normal clojure expression.")
     (reduce unparse-m-expr (:expr (first parsed)) (rest parsed))))
 
+(defmacro run-mdo [m & exprs]
+  `(run-monad ~m (mdo ~@exprs)))
+
 (defn lift-m [f]
   (fn [m]
     (>>= m (comp return f))))

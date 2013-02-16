@@ -33,14 +33,11 @@
   (let [i-return (:return inner)]
     (monad
      :return (fn [x] (i-return (just x)))
-     :bind (fn [m f]
-             (run-monad
-              inner
-              (mdo
-               v <- m
-               (if (nothing? v)
-                 (i-return nothing)
-                 (f (.v v))))))
+     :bind (fn [m f] (run-mdo inner
+                             v <- m
+                             (if (nothing? v)
+                               (i-return nothing)
+                               (f (.v v)))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
      :monadtrans {:lift (lift-m just)}
      :monadplus {:mzero (fn [_] (i-return nothing))
@@ -76,13 +73,11 @@
      :return (curryfn [x s] (i-return (Pair. x s)))
      :bind (fn [m f]
              (fn [s]
-               (run-monad
-                inner
-                (mdo
-                 ^Pair p <- (m s)
-                 let v = (fst p) s = (snd p)
-                 (run-state-t (state-t inner)
-                              (f v) s)))))
+               (run-mdo inner
+                        ^Pair p <- (m s)
+                        let v = (fst p) s = (snd p)
+                        (run-state-t (state-t inner)
+                                     (f v) s))))
      :monadstate {:get-state (curryfn [_ s] (i-return (Pair. s s)))
                   :put-state (curryfn [v s] (i-return  (Pair. nil v)))}
      :monadfail (when (:monadfail inner)
@@ -97,9 +92,9 @@
                                 (run-state-t (state-t inner) (first leftright) s)
                                 (run-state-t (state-t inner) (second leftright) s))))}))
      :monadtrans {:lift (curryfn [m s]
-                          (run-monad inner (mdo
-                                            v <- m
-                                            (return (Pair. v s)))))})))
+                          (run-mdo inner
+                                   v <- m
+                                   (return (Pair. v s))))})))
 
 (def state-t (memoize state-t*))
 
@@ -137,26 +132,27 @@
     (monad
      :return (comp i-return right)
      :bind (fn [m f]
-             (run-monad inner (mdo
-                               x <- (run-monad (error-t inner) m)
-                               (either (comp i-return left)
-                                       #(run-monad (error-t inner) (f %)) x))))
+             (run-mdo inner 
+                      x <- (run-monad (error-t inner) m)
+                      (either (comp i-return left)
+                              #(run-monad (error-t inner) (f %)) x)))
      :monadtrans {:lift (fn [m] (run-monad inner (>>= m (comp i-return right))))}
      :monadfail {:mfail (comp i-return left)}
      :monadplus {:mzero (fn [_] (i-return (left nil)))
                  :mplus (fn [lr]
-                          (run-monad inner (mdo l <- (run-monad (error-t inner) (first lr))
-                                                (if (left? l)
-                                                  (run-monad (error-t inner) (second lr))
-                                                  l))))}
+                          (run-mdo inner
+                                   l <- (run-monad (error-t inner) (first lr))
+                                   (if (left? l)
+                                     (run-monad (error-t inner) (second lr))
+                                     l)))}
      :monaderror {:throw-error (comp i-return left)
                   :catch-error
                   (fn [[m handler]]
-                    (run-monad
-                     inner (mdo r <- (run-monad (error-t inner) m)
-                                (either #(run-monad (error-t inner) (handler %))
-                                        (comp i-return right)
-                                        r))))})))
+                    (run-mdo inner
+                             r <- (run-monad (error-t inner) m)
+                             (either #(run-monad (error-t inner) (handler %))
+                                     (comp i-return right)
+                                     r)))})))
 (def error-t (memoize error-t*))
 (def error-m (error-t identity-m))
 
@@ -184,10 +180,9 @@
      :return (comp constantly i-return)
      :bind (fn [m f]
              (fn [e]
-               (run-monad inner
-                          (mdo
-                           a <- (m e)
-                           (run-reader-t (reader-t inner) (f a) e)))))
+               (run-mdo inner
+                        a <- (m e)
+                        (run-reader-t (reader-t inner) (f a) e))))
      :monadreader {:ask (fn [_] i-return)
                    :asks #(comp i-return %)
                    :local (curryfn [[f m] e]
