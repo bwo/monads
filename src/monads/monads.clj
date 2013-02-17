@@ -171,7 +171,7 @@
   :bind (fn [m f]
           ;; inelegant: since f may return objects wrapped in Return
           ;; or singleton lists, we have to extract the results here.
-          (flatten* (map (comp (partial run-monad list-m) f)  m)))
+          (flatten-1 (map (comp (partial run-monad list-m) f)  m)))
   :monadplus {:mzero (fn [_] ())
               :mplus (fn [leftright]
                        (concat (run-monad list-m (first leftright))
