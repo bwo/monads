@@ -90,17 +90,33 @@
                           (run-mdo inner
                                    v <- m
                                    (return (Pair. v s))))})))
-
-(def get-state (Returned. (curryfn [m s] ((-> m :inner :return) (Pair. s s)))))
-(defn put-state [v] (Returned. (curryfn [m s] ((-> m :inner :return) (Pair. nil v)))))
-(defn modify [f] (>>= get-state (comp put-state f)))
-
 (def state-t (memoize state-t*))
 
-(def state-m (state-t identity-m))
+(defn state-return [x]
+  (fn inner-state-return [s] (Pair. x s)))
+
+(declare run-state)
+
+(defmonad state-m
+  :return (curryfn [x s] (Pair. x s))
+  :bind (fn [m f]
+          (fn [x]
+            (let [^Pair p (m s)]
+              (run-state (f (fst p)) (snd p))))))
 
 (defn run-state [computation initial-state]
-  (run-state-t (state-t identity-m) computation initial-state))
+  ((run-monad state-m computation) initial-state))
+
+(def get-state (Returned. (curryfn [m s]
+                            (if-let [i-return (-> m :inner :return)]
+                              (i-return (Pair. s s))
+                              (Pair. s s)))))
+(defn put-state [v] (Returned. (curryfn [m s]
+                                 (if-let [i-return (-> m :inner :return)]
+                                   (i-return (Pair. nil v))
+                                   (Pair. nil v)))))
+(defn modify [f] (>>= get-state (comp put-state f)))
+
 
 (def eval-state (comp fst run-state))
 (def exec-state (comp snd run-state))
@@ -206,7 +222,7 @@
                                        (run-reader-t (reader-t inner) (first leftright) e)
                                        (run-reader-t (reader-t inner) (second leftright) e))))})))))
 
-(def ask (Returned. (fn [m] (-> m :inner :return))))
+(def ask (Returned. (comp :return :inner)))
 (defn asks [f] (Returned. (fn [m] (comp (-> m :inner :return) f))))
 (defn local [f comp] (Returned. (curryfn [m e]
                                   (run-reader-t m comp (f e)))))
@@ -301,9 +317,10 @@
 (defn index-in-list [p lst]
   (second (first (filter (comp p first) (map vector lst (range))))))
 (defn n-node [x table]
-  (if-let [i (index-in-list (partial = x) table)]
+  (if-let [i (get table x)]
     [table i]
-    [(conj table x) (count table)]))
+    (let [c (count table)]
+      [(assoc table x c) c])))
 (defn number-node [x]
   (mdo table <- get-state
        let [newtable newpos] = (n-node x table)
@@ -317,5 +334,7 @@
          nt2 <- (number-tree right)
          (return (node num nt1 nt2)))))
 (defn num-tree [t]
-  (eval-state (number-tree t) []))
+  (eval-state (number-tree t) {}))
 
+(defn tree [n]
+  (reduce #(node %2 %1 %1) nil (range n)))
