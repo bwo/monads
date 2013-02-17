@@ -54,11 +54,7 @@
   (.v o))
 
 (defn >>= [m f]
-  ;; test: does this actually speed anything up?
-  (cond
-   (instance? Return m) (f (get-return m))
-   (instance? Return f) m
-   :else (Bind. m f)))
+  (Bind. m f))
 
 (defn >> [m c]
   (>>= m (fn [_] c)))
