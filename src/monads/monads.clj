@@ -258,16 +258,34 @@
       (recur m (get-cont comp) (get-arg comp))
       comp)))
 
-(defmonad writer-m
-  :return (fn [v] (Pair. v nil))
-  :bind (fn [m f]
-          (let [^Pair m (run-monad writer-m m)
-                ^Pair m' (run-monad writer-m (f (fst m)))]
-            (Pair. (fst m') (<> (snd m) (snd m')))))
-  :monadwriter {:tell (partial ->Pair nil)
-                :listen (fn [m]
-                          (let [p (run-monad writer-m m)]
-                            (Pair. p (snd p))))})
+(declare writer-t)
+(defn writer-t* [inner]
+  (let [i-return (:return inner)]
+    :inner inner
+    :return (fn [v] (i-return (Pair. v nil)))
+    :bind (fn [m f]
+            (run-mdo inner
+                     ^Pair p <- (run-monad (writer-t inner) m)
+                     let a = (fst p) w = (snd p)
+                     ^Pair p <- (run-monad (writer-t inner) (f a))
+                     let b = (fst p) w' = (snd p)
+                     (return (Pair. b (<> w w')))))))
+
+(defn tell [w] (Returned. (fn [m] ((-> m :inner :return) (Pair. nil w)))))
+(defn listen [comp] (Returned.
+                     (fn [m]
+                       (run-mdo (:inner m)
+                                ^Pair p <- (run-monad m comp)
+                                (return (Pair. [(fst p) (snd p)] (snd p)))))))
+(defn pass [comp] (Returned.
+                   (fn [m]
+                     (run-mdo (:inner m)
+                              ^Pair p <- (run-monad m comp)
+                              (return (Pair. (first (fst p))
+                                             ((second (fst p)) (snd p))))))))
+
+(def writer-t (memoize writer-t*))
+(def writer-m (writer-t identity-m))
 
 (defn listens [f m]
   (mdo p <- (listen m)

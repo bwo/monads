@@ -87,15 +87,6 @@
 (defn lift [m]
   (MonadOp. [:monadtrans :lift] m))
 
-
-;; writer
-(defn tell [w]
-  (MonadOp. [:monadwriter :tell] w))
-(defn listen [m]
-  (MonadOp. [:monadwriter :listen] m))
-(defn pass [m]
-  (MonadOp. [:monadwriter :pass] m))
-
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]
