@@ -47,7 +47,7 @@
                                (f (from-just v)))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
      :monadtrans {:lift (partial lift-m just)}
-     :monadplus {:mzero (fn [_] (i-return nothing))
+     :monadplus {:mzero (i-return nothing)
                  :mplus (fn [lr]
                           (let [lv (run-monad (maybe-t inner) (first lr))]
                             (or lv
@@ -59,7 +59,7 @@
           (let [v (run-monad maybe-m m)]
             (when v (f (from-just v)))))
   :monadfail {:mfail (constantly nothing)}
-  :monadplus {:mzero (constantly nothing)
+  :monadplus {:mzero nothing
               :mplus (fn [lr]
                        (let [lv (run-monad maybe-m (first lr))]
                          (or lv
@@ -95,7 +95,7 @@
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
                         i-zero ((-> inner :monadplus :mzero) nil)]
-                    {:mzero (curryfn [_ _] i-zero)
+                    {:mzero (fn [_] i-zero)
                      :mplus (curryfn [leftright s]
                               (i-plus
                                (lazy-pair
@@ -184,7 +184,7 @@
                               #(run-monad (error-t inner) (f %)) x)))
      :monadtrans {:lift (fn [m] (run-monad inner (>>= m (comp i-return right))))}
      :monadfail {:mfail (comp i-return left)}
-     :monadplus {:mzero (fn [_] (i-return (left nil)))
+     :monadplus {:mzero (i-return (left nil))
                  :mplus (fn [lr]
                           (run-mdo inner
                                    l <- (run-monad (error-t inner) (first lr))
@@ -199,7 +199,7 @@
             (let [r (run-monad error-m m)]
               (either left #(run-monad error-m (f %)) r)))
     :monadfail {:mfail left}
-    :monadplus {:mzero (constantly mzero)
+    :monadplus {:mzero mzero
                 :mplus (fn [lr]
                          (let [v (run-monad error-m (first lr))]
                            (if (left? v)
@@ -235,7 +235,7 @@
           ;; inelegant: since f may return objects wrapped in Return
           ;; or singleton lists, we have to extract the results here.
           (flatten-1 (map (comp (partial run-monad list-m) f)  m)))
-  :monadplus {:mzero (fn [_] ())
+  :monadplus {:mzero ()
               :mplus (fn [leftright]
                        (concat (run-monad list-m (first leftright))
                                (run-monad list-m (second leftright))))})
@@ -258,7 +258,7 @@
                         (run-reader-t (reader-t inner) (f a) e))))
      :monadtrans {:lift constantly}
      :monadplus (when (:monadplus inner)
-                  (let [i-zero ((-> inner :monadplus :mzero) nil)
+                  (let [i-zero (-> inner :monadplus :mzero)
                         i-plus (-> inner :monadplus :mplus)]
                     {:mzero (fn [_] (constantly i-zero))
                      :mplus (curryfn [leftright e]

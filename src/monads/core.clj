@@ -39,14 +39,6 @@
   MRun
   (mrun [_ m]  ((:bind m) (run-monad m comp) f)))
 
-(deftype MonadOp [path obj]
-  Object
-  (toString [this]
-    (with-out-str (print [path obj])))
-  MRun
-  (mrun [_ m]
-    ((get-in m path) obj)))
-
 (defn return [x]
   (Return. x))
 
@@ -72,17 +64,16 @@
   `(def ~name (monad ~@(apply concat params))))
 
 ;;; monadplus
-(def mzero (MonadOp. [:monadplus :mzero] nil))
+(def mzero (Returned. (fn [m] (-> m :monadplus :mzero))))
 (defn mplus [left right]
-  (MonadOp. [:monadplus :mplus] [left right]))
+  (Returned. (fn [m] ((-> m :monadplus :mplus) [left right]))))
 
 ;; monadfail
 (defn mfail [msg]
-  (MonadOp. [:monadfail :mfail] msg))
+  (Returned. (fn [m] ((-> m :monadfail :mfail) msg))))
 
-(defn lift [m]
-  (MonadOp. [:monadtrans :lift] m))
-
+(defn lift [inner]
+  (Returned. (fn [m] ((-> m :monadtrans :lift) inner))))
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]
