@@ -87,12 +87,6 @@
 (defn lift [m]
   (MonadOp. [:monadtrans :lift] m))
 
-;; monaderror
-(defn throw-error [e]
-  (MonadOp. [:monaderror :throw-error] e))
-
-(defn catch-error [m handler]
-  (MonadOp. [:monaderror :catch-error] [m handler]))
 
 ;; writer
 (defn tell [w]

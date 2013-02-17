@@ -133,6 +133,7 @@
 (defn error-t* [inner]
   (let [i-return (:return inner)]
     (monad
+     :inner inner
      :return (comp i-return right)
      :bind (fn [m f]
              (run-mdo inner 
@@ -147,15 +148,17 @@
                                    l <- (run-monad (error-t inner) (first lr))
                                    (if (left? l)
                                      (run-monad (error-t inner) (second lr))
-                                     l)))}
-     :monaderror {:throw-error (comp i-return left)
-                  :catch-error
-                  (fn [[m handler]]
-                    (run-mdo inner
-                             r <- (run-monad (error-t inner) m)
-                             (either #(run-monad (error-t inner) (handler %))
-                                     (comp i-return right)
-                                     r)))})))
+                                     l)))})))
+
+(defn throw-error [e] (Returned. (fn [m] ((-> m :inner :return) (left e)))))
+(defn catch-error [comp handler]
+  (Returned. (fn [m]
+               (run-mdo (:inner m)
+                        r <- (run-monad m comp)
+                        (either #(run-monad m (handler %))
+                                (comp (-> m :inner :return) right)
+                                r)))))
+
 (def error-t (memoize error-t*))
 (def error-m (error-t identity-m))
 
