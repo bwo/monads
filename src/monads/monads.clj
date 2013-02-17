@@ -8,6 +8,11 @@
 (defmacro lazy-pair [a b]
   `(lazy-seq (cons ~a (lazy-seq (cons ~b '())))))
 
+(defmacro if-inner-return [m ifb elseb]
+  `(if-let [~'i-return (-> ~m :inner :return)]
+     ~ifb
+     ~elseb))
+
 (defmonad identity-m
   :bind (fn [m f] (f m))
   :return identity)
@@ -48,7 +53,17 @@
                             (or lv
                                 (run-monad (maybe-t inner) (second lr)))))})))
 
-(def maybe-m (maybe-t identity-m))
+(defmonad maybe-m
+  :return just
+  :bind (fn [m f]
+          (let [v (run-monad maybe-m m)]
+            (when v (f (from-just v)))))
+  :monadfail {:mfail (constantly nothing)}
+  :monadplus {:mzero (constantly nothing)
+              :mplus (fn [lr]
+                       (let [lv (run-monad maybe-m (first lr))]
+                         (or lv
+                             (run-monad maybe-m (second lr)))))})
 
 (deftype Pair [fst snd]
   Object
@@ -100,12 +115,17 @@
 (defmonad state-m
   :return (curryfn [x s] (Pair. x s))
   :bind (fn [m f]
-          (fn [x]
+          (fn [s]
             (let [^Pair p (m s)]
               (run-state (f (fst p)) (snd p))))))
 
 (defn run-state [computation initial-state]
   ((run-monad state-m computation) initial-state))
+
+(def get-state (Returned. (curryfn [m s]
+                            (if-inner-return m
+                              (i-return (Pair. s s))
+                              (Pair. s s)))))
 
 (def get-state (Returned. (curryfn [m s]
                             (if-let [i-return (-> m :inner :return)]
@@ -116,7 +136,6 @@
                                    (i-return (Pair. nil v))
                                    (Pair. nil v)))))
 (defn modify [f] (>>= get-state (comp put-state f)))
-
 
 (def eval-state (comp fst run-state))
 (def exec-state (comp snd run-state))
@@ -166,17 +185,35 @@
                                      (run-monad (error-t inner) (second lr))
                                      l)))})))
 
-(defn throw-error [e] (Returned. (fn [m] ((-> m :inner :return) (left e)))))
+(let [mzero (left nil)]
+  (defmonad error-m
+    :return right
+    :bind (fn [m f]
+            (let [r (run-monad error-m m)]
+              (either left #(run-monad error-m (f %)) r)))
+    :monadfail {:mfail left}
+    :monadplus {:mzero (constantly mzero)
+                :mplus (fn [lr]
+                         (let [v (run-monad error-m (first lr))]
+                           (if (left? v)
+                             (run-monad error-m (second lr))
+                             v)))}))
+
+(defn throw-error [e] (Returned. (fn [m]
+                                   (if-inner-return m
+                                     (i-return (left e))
+                                     (left e)))))
 (defn catch-error [comp handler]
   (Returned. (fn [m]
-               (run-mdo (:inner m)
-                        r <- (run-monad m comp)
-                        (either #(run-monad m (handler %))
-                                (comp (-> m :inner :return) right)
-                                r)))))
+               (if-inner-return m
+                 (run-mdo (:inner m)
+                          v <- (run-monad m comp)
+                          (either #(run-monad m (handler %))
+                                  (comp i-return right) v))
+                 (let [v (run-monad m comp)]
+                   (either #(run-monad m (handler %)) right v))))))
 
 (def error-t (memoize error-t*))
-(def error-m (error-t identity-m))
 
 (defn flatten-1
   [seqs]
@@ -222,16 +259,32 @@
                                        (run-reader-t (reader-t inner) (first leftright) e)
                                        (run-reader-t (reader-t inner) (second leftright) e))))})))))
 
-(def ask (Returned. (comp :return :inner)))
-(defn asks [f] (Returned. (fn [m] (comp (-> m :inner :return) f))))
-(defn local [f comp] (Returned. (curryfn [m e]
-                                  (run-reader-t m comp (f e)))))
-
 (def reader-t (memoize reader-t*))
-(def reader-m (reader-t identity-m))
+
+(declare run-reader)
+
+(defmonad reader-m
+  :return constantly
+  :bind (fn [m f]
+          (fn [e]
+            (run-reader (f (run-reader m e)) e))))
+
+(def ask (Returned. (fn [m]
+                      (if-inner-return m
+                        i-return
+                        identity))))
+(defn asks [f] (Returned. (fn [m]
+                           (if-inner-return m
+                             (comp i-return f)
+                             f))))
+(defn local [f comp] (Returned.
+                      (curryfn [m e]
+                        (if-inner-return m
+                          (run-reader-t m comp (f e))
+                          (run-reader m comp (f e))))))
 
 (defn run-reader [comp e]
-  (run-reader-t reader-m comp e))
+  ((run-monad reader-m comp) e))
 
 (deftype Cont [c v]
     Object
@@ -287,21 +340,43 @@
                      let b = (fst p) w' = (snd p)
                      (return (Pair. b (<> w w')))))))
 
-(defn tell [w] (Returned. (fn [m] ((-> m :inner :return) (Pair. nil w)))))
+(def writer-t (memoize writer-t*))
+
+(defmonad writer-m
+  :return (fn [v] (Pair. v nil))
+  :bind (fn [m f]
+          (let [^Pair p (run-monad writer-m m)
+                a (fst p)
+                w (snd p)
+                ^Pair p (run-monad writer-m (f a))
+                b (fst p)
+                w' (snd p)]
+            (Pair. b (<> w w')))))
+
+(defn tell [w] (Returned. (fn [m]
+                            (if-inner-return m
+                              (i-return (Pair. nil w))
+                              (Pair. nil w)))))
+
 (defn listen [comp] (Returned.
                      (fn [m]
-                       (run-mdo (:inner m)
-                                ^Pair p <- (run-monad m comp)
-                                (return (Pair. [(fst p) (snd p)] (snd p)))))))
+                       (if-inner-return m
+                        (run-mdo (:inner m)
+                                 ^Pair p <- (run-monad m comp)
+                                 (return (Pair. [(fst p) (snd p)] (snd p))))
+                        (let [^Pair p (run-monad m comp)]
+                          (Pair. [(fst p) (snd p)] (snd p)))))))
+
 (defn pass [comp] (Returned.
                    (fn [m]
-                     (run-mdo (:inner m)
-                              ^Pair p <- (run-monad m comp)
-                              (return (Pair. (first (fst p))
-                                             ((second (fst p)) (snd p))))))))
-
-(def writer-t (memoize writer-t*))
-(def writer-m (writer-t identity-m))
+                     (if-inner-return m
+                       (run-mdo (:inner m)
+                                ^Pair p <- (run-monad m comp)
+                                (return (Pair. (first (fst p))
+                                               ((second (fst p)) (snd p)))))
+                       (let [^Pair p (run-monad m comp)]
+                         (Pair. (first (fst p))
+                                ((second (fst p)) (snd p))))))))
 
 (defn listens [f m]
   (mdo p <- (listen m)
