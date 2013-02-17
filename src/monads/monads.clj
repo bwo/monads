@@ -144,25 +144,32 @@
 (defn eval-state-t [m comp initial-state]
   (run-monad (:inner m) (lift-m fst (run-state-t m comp initial-state))))
 
+(deftype Either [v type]
+  Object
+  (toString [this]
+    (with-out-str (print [type v]))))
+
+(defn right? [^Either o]
+  (= :right (.type o)))
+(defn left? [^Either o]
+  (= :left (.type o)))
+
 ;;; let's lay off the deftypes for this one
 (defn right [x]
-  {:val x :type ::right})
+  (Either. x :right))
 (defn left [x]
-  {:val x :type ::left})
+  (Either. x :left))
 
-(defn either [onleft onright e]
-  ((case (:type e)
-     ::right onright
-     ::left onleft) (:val e)))
+(defn either [onleft onright ^Either e]
+  ((case (.type e)
+     :right onright
+     :left onleft) (.v e)))
 
-(defn from-right [e]
+(defn from-right [^Either e]
   (either (fn [_] (throw (Exception. "from-right on left value!"))) identity e))
 
-(defn from-left [e]
+(defn from-left [^Either e]
   (either identity (fn [_] (throw (Exception. "from-left on right value!"))) e))
-
-(defn right? [e] (= ::right (:type e)))
-(defn left? [e] (= ::left (:type e)))
 
 (declare error-t)
 (defn error-t* [inner]
