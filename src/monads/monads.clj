@@ -186,16 +186,13 @@
 (defn- reader-t* [inner]
   (let [i-return (:return inner)]
     (monad
+     :inner inner
      :return (comp constantly i-return)
      :bind (fn [m f]
              (fn [e]
                (run-mdo inner
                         a <- (m e)
                         (run-reader-t (reader-t inner) (f a) e))))
-     :monadreader {:ask (fn [_] i-return)
-                   :asks #(comp i-return %)
-                   :local (curryfn [[f m] e]
-                            (run-reader-t (reader-t inner) m (f e)))}
      :monadtrans {:lift constantly}
      :monadplus (when (:monadplus inner)
                   (let [i-zero ((-> inner :monadplus :mzero) nil)
@@ -205,6 +202,11 @@
                               (i-plus (lazy-pair
                                        (run-reader-t (reader-t inner) (first leftright) e)
                                        (run-reader-t (reader-t inner) (second leftright) e))))})))))
+
+(def ask (Returned. (fn [m] (-> m :inner :return))))
+(defn asks [f] (Returned. (fn [m] (comp (-> m :inner :return) f))))
+(defn local [f comp] (Returned. (curryfn [m e]
+                                  (run-reader-t m comp (f e)))))
 
 (def reader-t (memoize reader-t*))
 (def reader-m (reader-t identity-m))
@@ -229,23 +231,17 @@
   :return (curryfn [r c] (Cont. c r))
   :bind (fn [m f]
           (fn [r]
-            (Cont. m (fn [v] (Cont. (f v) r)))))
-  :monadcont {:callcc (curryfn [f c]
-                        (Cont. (f (curryfn [v _] (Cont. c v))) c))})
+            (Cont. m (fn [v] (Cont. (f v) r))))))
 
-;; this is faster, but blows the stack.
-(defmonad cont-m2
-  :return (curryfn [r c] (c r))
-  :bind (fn [m f]
-          (fn [r]
-            ((run-monad cont-m2
-                        (m f)) r))))
+;; note: no use of m!
+(defn callcc [f]
+  (Returned. (curryfn [m c] (Cont. (f (curryfn [v _] (Cont. c v))) c))))
 
 (defn cont-t [inner]
   (let [i-return (:return inner)]
     (assoc cont-m
-      :monadtrans {:lift (curryfn [m c] (run-monad inner (>>= m c)))
-                   #_(curryfn [m c] (c (run-monad inner m)))})))
+      :monadtrans {:lift (curryfn [m c] (run-monad inner (>>= m c)))}
+      :inner inner)))
 
 (defn run-cont [m c]
   (let [m ((run-monad cont-m m) c)]

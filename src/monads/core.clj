@@ -87,16 +87,6 @@
 (defn lift [m]
   (MonadOp. [:monadtrans :lift] m))
 
-;; monadreader
-(def ask (MonadOp. [:monadreader :ask] nil))
-(defn asks [f] (MonadOp. [:monadreader :asks] f))
-(defn local [f m] (MonadOp. [:monadreader :local] [f m]))
-
-;; monadcont
-
-(defn callcc [f]
-  (MonadOp. [:monadcont :callcc] f))
-
 ;; monaderror
 (defn throw-error [e]
   (MonadOp. [:monaderror :throw-error] e))
