@@ -287,6 +287,7 @@
                       (if-inner-return m
                         i-return
                         identity))))
+;; or: (defn asks [f] (lift-m f ask))
 (defn asks [f] (Returned. (fn [m]
                            (if-inner-return m
                              (comp i-return f)
