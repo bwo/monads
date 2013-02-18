@@ -27,8 +27,6 @@ to the solution in this library:
 ;; Our trees: {:val int :left tree :right tree}, or nil
 (defn node [v left right]
   {:val v :left left :right right})
-(defn index-in-list [p lst]
-  (second (first (filter (comp p first) (map vector lst (range))))))
 (defn n-node [x table]
   (if-let [i (get table x)]
     [table i]
