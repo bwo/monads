@@ -36,6 +36,11 @@
 
 (def just #(Just. %))
 
+(defn maybe [on-nothing on-just m]
+  (if m
+    (on-just (from-just m))
+    on-nothing))
+
 (defn maybe-t [inner]
   (let [i-return (:return inner)]
     (monad
