@@ -71,7 +71,7 @@ Implementations are provided for reader, list, maybe, identity,
 continuation, state, and error monads, and with transformers for all
 except list (since the straightforward list-t implementation does not
 always yield a true monad, though I may yet implement
-(logic-t)[http://hackage.haskell.org/package/logict]) and identity.
+[logic-t](http://hackage.haskell.org/package/logict)) and identity.
 
 ## Usage
 
