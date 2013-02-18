@@ -71,6 +71,8 @@
                              (run-monad maybe-m (second lr)))))})
 
 (deftype Pair [fst snd]
+  clojure.lang.Seqable
+  (seq [_] (list fst snd))
   Object
   (toString [this]
     (with-out-str (print [fst snd]))))
