@@ -49,7 +49,7 @@
                              v <- m
                              (if (nothing? v)
                                (i-return nothing)
-                               (f (from-just v)))))
+                               (run-monad (maybe-t inner) (f (from-just v))))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
      :monadtrans {:lift (partial lift-m just)}
      :monadplus {:mzero (i-return nothing)
@@ -62,7 +62,7 @@
   :return just
   :bind (fn [m f]
           (let [v (run-monad maybe-m m)]
-            (when v (f (from-just v)))))
+            (when v (run-monad maybe-m (f (from-just v))))))
   :monadfail {:mfail (constantly nothing)}
   :monadplus {:mzero nothing
               :mplus (fn [lr]
