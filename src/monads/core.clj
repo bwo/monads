@@ -109,9 +109,6 @@
           b <- m2
           (return (f a b)))))
 
-;; only works on curried fns, alas
-;; (run-monad maybe-m (ap (ap (return (curryfn #(+ %1 %2))) (return 1)) (return 2)))
-;; #<Just 3>
 (def ap (lift-m-2 (fn [a b] (a b))))
 
 (defn lift-m*
