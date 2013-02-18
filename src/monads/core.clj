@@ -42,9 +42,6 @@
 (defn return [x]
   (Return. x))
 
-(defn get-return [^Return o]
-  (.v o))
-
 (defn >>= [m f]
   (Bind. m f))
 
