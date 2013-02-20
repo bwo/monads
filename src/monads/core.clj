@@ -1,43 +1,13 @@
 (ns monads.core
-  (:require [clojure.set :as s]
+  (:require [monads.types :as types]
+            [clojure.set :as s]
             [the.parsatron :as parsatron]
-            [macroparser.functions :as functions]
             [macroparser.bindings :as bindings]
-            [macroparser.monads :as parser]))
+            [macroparser.monads :as parser])
+  (:import [monads.types Return Returned Bind]))
 
 (set! *warn-on-reflection* true)
 
-(declare run-monad)
-
-(defprotocol MRun
-  (mrun [this m]))
-
-(extend-protocol MRun
-  Object
-  (mrun [this _] this)
-  nil
-  (mrun [this _] nil))
-
-(deftype Return [v]
-  Object
-  (toString [this]
-    (with-out-str (print v)))
-  MRun
-  (mrun [_ m] ((:return m) v)))
-
-(deftype Returned [v]
-  Object
-  (toString [this]
-    (with-out-str (print v)))
-  MRun
-  (mrun [_ m] (v m)))
-
-(deftype Bind [comp f]
-  Object
-  (toString [this]
-    (with-out-str (print [comp f])))
-  MRun
-  (mrun [_ m]  ((:bind m) (run-monad m comp) f)))
 
 (defn return [x]
   (Return. x))
@@ -49,7 +19,7 @@
   (>>= m (fn [_] c)))
 
 (defn run-monad [m computation]
-  (mrun computation m))
+  (types/mrun computation m))
 
 (defmacro monad [& {:as params}]
   `(let [params# (s/rename-keys ~params {:>>= :bind})]
@@ -89,63 +59,3 @@
 (defmacro run-mdo [m & exprs]
   `(run-monad ~m (mdo ~@exprs)))
 
-(defn lift-m
-  ([f] #(lift-m f %))
-  ([f m] (>>= m (comp return f))))
-
-(defn sequence-m [ms]
-  (reduce (fn [m-acc m]
-            (mdo mval <- m
-                 ms <- m-acc
-                 (return (conj ms mval))))
-          (return [])
-          ms))
-
-(defn lift-m-2
-  ([f] #(lift-m-2 f %))
-  ([f m] #(lift-m-2 f m %))
-  ([f m1 m2]     
-     (mdo a <- m1
-          b <- m2
-          (return (f a b)))))
-
-(def ap (lift-m-2 (fn [a b] (a b))))
-
-(defn lift-m*
-  ([f] (fn [& m-args] (apply lift-m* f m-args)))
-  ([f & m-args]
-      (mdo args <- (sequence-m m-args)
-           (return (apply f args)))))
-
-(defn fold-m [f acc xs]
-  (if (empty? xs)
-    (return acc)
-    (mdo a <- (f acc (first xs))
-         (fold-m f a (rest xs)))))
-
-(defn mwhen [p acc]
-  (if p
-    acc
-    (return nil)))
-
-(defn guard [p]
-  (if p
-    (return nil)
-    mzero))
-
-(defmacro curryfn [& args]
-  (let [parsed (parsatron/run (functions/parse-fn-like)
-                              (if (and (== 1 (count args))
-                                       (#{'fn 'fn*} (ffirst args)))
-                                (rest (first args))
-                                args))
-        arities (:arities parsed)
-        arity (first arities)
-        bindings (map bindings/unparse-bindings (:bindings (:params arity)))
-        body (reduce (fn [acc binding]
-                       `(fn [~binding] ~acc))
-                     `(do ~@(:body arity))
-                     (reverse bindings))]
-    (assert (== 1 (count arities)) "Can't curry multi-arity functions")
-    (assert (nil? (-> arity :bindings :rest)) "Can't curry functions with rest args")
-    body))

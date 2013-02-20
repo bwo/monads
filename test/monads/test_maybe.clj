@@ -1,6 +1,11 @@
-(ns monads.test-monads
+(ns monads.test-maybe
+  ;; blecchy side-effect of moving things around and being too lazy to
+  ;; just import the relevant fns/entities
   (:use monads.core
-        monads.monads
+        monads.maybe
+        monads.types
+        monads.util
+        monads.identity
         expectations))
 
 (given [m] (do (expect nil (run-monad m mzero))
