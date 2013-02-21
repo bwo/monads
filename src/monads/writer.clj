@@ -13,6 +13,14 @@
     (monad
      :inner inner
      :return (fn [v] (i-return (Pair. v nil)))
+     :monadfail (when (:monadfail inner)
+                  (let [ifail (-> inner :monadfail :mfail)]
+                    {:mfail (fn [msg]
+                              (ifail msg))}))
+     :monadtrans {:lift (fn [m]
+                          (run-mdo inner
+                                   a <- m
+                                   (return (Pair. a nil))))}
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
                         i-zero (-> inner :monadplus :mzero)]
