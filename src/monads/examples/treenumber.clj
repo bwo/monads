@@ -28,5 +28,18 @@
 (defn num-tree [t]
   (eval-state (number-tree t) {}))
 
-(defn tree [n]
+(def a-tree (node "a"
+                  (node "a" nil (node "c"
+                                      (node "b" nil (node "a" nil nil))
+                                      (node "c"
+                                            nil
+                                            (node "d" nil nil))))
+                  (node "d"
+                        (node "c" nil nil)
+                        (node "b"
+                              (node "e"
+                                    (node "a" nil nil)
+                                    nil)))))
+
+(defn bintree [n]
   (reduce #(node %2 %1 %1) nil (range n)))
