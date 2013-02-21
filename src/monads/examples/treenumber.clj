@@ -39,7 +39,8 @@
                         (node "b"
                               (node "e"
                                     (node "a" nil nil)
-                                    nil)))))
+                                    nil)
+                              nil))))
 
 (defn bintree [n]
   (reduce #(node %2 %1 %1) nil (range n)))
