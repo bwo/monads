@@ -1,8 +1,7 @@
 (ns monads.examples.evaluator1
   (:require [monads.core :refer :all]
             [monads.state :as s])
-  (:use [monads.types :only [fst snd]]
-        [monads.util :only [lift-m lift-m-2]]))
+  (:use [monads.util :only [lift-m lift-m*]]))
 
 (defn const [x]
   (if (symbol? x)
@@ -12,7 +11,7 @@
 (declare run)
 
 (defn calc [op x y]
-  (lift-m-2 op (run x) (run y)))
+  (lift-m* op (run x) (run y)))
 
 (defn decl [x y]
   (mdo v <- (run y)

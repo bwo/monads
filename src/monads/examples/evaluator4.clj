@@ -3,7 +3,7 @@
             [monads.state :as s]
             [monads.writer :as w]
             [monads.error :as error])
-  (:use [monads.util :only [lift-m lift-m-2 guard]]))
+  (:use [monads.util :only [lift-m lift-m* guard]]))
 
 (defn const [x]
   (if (symbol? x)
@@ -18,7 +18,7 @@
 (defn calc [op x y msg]
   (mdo
    (lift (w/tell [(str msg ": " x ", " y)]))
-   (lift-m-2 op (run x) (run y))))
+   (lift-m* op (run x) (run y))))
 
 (defn decl [x y]
   (mdo v <- (run y)
