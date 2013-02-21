@@ -31,8 +31,8 @@
             (mdo mval <- m
                  ms <- m-acc
                  (return (conj ms mval))))
-          (return [])
-          ms))
+          (return ())
+          (reverse ms)))
 
 (defn lift-m-2
   ([f] #(lift-m-2 f %))
