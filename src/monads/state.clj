@@ -25,7 +25,7 @@
                   {:mfail (curryfn [str _] ((-> inner :monadfail :mfail) str))})
      :monadplus (when (:monadplus inner)
                   (let [i-plus (-> inner :monadplus :mplus)
-                        i-zero ((-> inner :monadplus :mzero) nil)]
+                        i-zero (-> inner :monadplus :mzero)]
                     {:mzero (fn [_] i-zero)
                      :mplus (curryfn [leftright s]
                               (i-plus

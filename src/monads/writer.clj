@@ -1,23 +1,33 @@
 (ns monads.writer
   (:require [monads.core :refer :all])
   (:use [monads.types :only [fst snd]]
-        [monads.util :only [if-inner-return]]
+        [monads.util :only [if-inner-return lazy-pair]]
         [babbage.monoid :only [<>]])
   (:import [monads.types Returned Pair]))
 
 
 (declare writer-t)
+
 (defn writer-t* [inner]
   (let [i-return (:return inner)]
-    :inner inner
-    :return (fn [v] (i-return (Pair. v nil)))
-    :bind (fn [m f]
-            (run-mdo inner
-                     ^Pair p <- (run-monad (writer-t inner) m)
-                     let a = (fst p) w = (snd p)
-                     ^Pair p <- (run-monad (writer-t inner) (f a))
-                     let b = (fst p) w' = (snd p)
-                     (return (Pair. b (<> w w')))))))
+    (monad
+     :inner inner
+     :return (fn [v] (i-return (Pair. v nil)))
+     :monadplus (when (:monadplus inner)
+                  (let [i-plus (-> inner :monadplus :mplus)
+                        i-zero (-> inner :monadplus :mzero)]
+                    {:mzero i-zero
+                     :mplus (fn [lr]
+                              (i-plus (lazy-pair
+                                       (run-monad (writer-t inner) (first lr))
+                                       (run-monad (writer-t inner) (second lr)))))}))
+     :bind (fn [m f]
+             (run-mdo inner
+                      ^Pair p <- (run-monad (writer-t inner) m)
+                      let a = (fst p) w = (snd p)
+                      ^Pair p <- (run-monad (writer-t inner) (f a))
+                      let b = (fst p) w' = (snd p)
+                      (return (Pair. b (<> w w'))))))))
 
 (def writer-t (memoize writer-t*))
 
