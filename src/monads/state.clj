@@ -58,10 +58,6 @@
                               (i-return (Pair. s s))
                               (Pair. s s)))))
 
-(def get-state (Returned. (curryfn [m s]
-                            (if-let [i-return (-> m :inner :return)]
-                              (i-return (Pair. s s))
-                              (Pair. s s)))))
 (defn put-state [v] (Returned. (curryfn [m s]
                                  (if-let [i-return (-> m :inner :return)]
                                    (i-return (Pair. nil v))
