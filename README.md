@@ -25,6 +25,17 @@ except list (since the straightforward list-t implementation does not
 always yield a true monad, though I may yet implement
 [logic-t](http://hackage.haskell.org/package/logict)) and identity.
 
+A caveat: both algo.monads and this library will eventually blow the
+stack on deeply nested computations. However, this library blows the
+stack much sooner than does algo.monads. There is a branch to attempt
+to avoid this by trampolining following [roughly this
+strategy](https://apocalisp.wordpress.com/2011/10/26/tail-call-elimination-in-scala-monads/);
+it's been implemented for the state monad but (a) this results in a
+significant slowdown; (b) the strategy as currently pursued makes
+writing the monad implementations more of a pain; (c) the strategy as
+currently pursued seems to make writing monad transformer
+implementations *really* a pain.
+
 ## Usage
 
 Monadic computations are run using `run-monad`, or, for the reader,
