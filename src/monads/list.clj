@@ -6,7 +6,7 @@
   (lazy-seq
    (if (not (seq xs))
      acc    
-     (f (first xs) (foldr f acc (rest xs))))))
+     (concat (f (first xs)) (foldr f acc (rest xs))))))
 
 ;; list-t is not always a correct transformer. Omitted.
 (defmonad list-m
@@ -14,8 +14,7 @@
   :bind (fn [m f]
           ;; inelegant: since f may return objects wrapped in Return
           ;; or singleton lists, we have to extract the results here.
-          (foldcat (fn [x acc]
-                   (concat (run-monad list-m (f x)) acc))  '()  m))
+          (foldcat (comp (partial run-monad list-m) f)  '()  m))
   :monadplus {:mzero ()
               :mplus (fn [leftright]
                        (concat (run-monad list-m (first leftright))
