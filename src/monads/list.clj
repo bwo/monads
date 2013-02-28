@@ -6,7 +6,7 @@
   (lazy-seq
    (if (not (seq xs))
      acc    
-     (concat (f (first xs)) (foldr f acc (rest xs))))))
+     (concat (f (first xs)) (foldcat f acc (rest xs))))))
 
 ;; list-t is not always a correct transformer. Omitted.
 (defmonad list-m
