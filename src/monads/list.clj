@@ -12,8 +12,6 @@
 (defmonad list-m
   :return list
   :bind (fn [m f]
-          ;; inelegant: since f may return objects wrapped in Return
-          ;; or singleton lists, we have to extract the results here.
           (foldcat (comp (partial run-monad list-m) f)  '()  m))
   :monadplus {:mzero ()
               :mplus (fn [leftright]
