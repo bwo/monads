@@ -2,11 +2,11 @@
   (:require [monads.core :refer :all]))
 
 
-(defn flatten-1
-  [seqs]
+(defn foldcat [f acc xs]
   (lazy-seq
-   (when-let [s (seq seqs)]
-     (concat (first s) (flatten-1 (rest s))))))
+   (if (not (seq xs))
+     acc    
+     (f (first xs) (foldr f acc (rest xs))))))
 
 ;; list-t is not always a correct transformer. Omitted.
 (defmonad list-m
@@ -14,7 +14,8 @@
   :bind (fn [m f]
           ;; inelegant: since f may return objects wrapped in Return
           ;; or singleton lists, we have to extract the results here.
-          (flatten-1 (map (comp (partial run-monad list-m) f)  m)))
+          (foldcat (fn [x acc]
+                   (concat (run-monad list-m (f x)) acc))  '()  m))
   :monadplus {:mzero ()
               :mplus (fn [leftright]
                        (concat (run-monad list-m (first leftright))
