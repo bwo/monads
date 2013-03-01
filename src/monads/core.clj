@@ -18,12 +18,25 @@
 (defn >> [m c]
   (>>= m (fn [_] c)))
 
+(deftype Cont [m f])
+
+(defn run-monad-1 [m computation]
+  (types/mrun computation m))
+
 (defn run-monad [m computation]
-  (let [r (types/mrun computation m)]
-    (condp instance? r
-      Return (recur m r)
-      Bind (recur m r)
-      Returned (recur m r)
+  (loop [r (types/mrun computation m) stack ()]
+    (condp instance? r      
+      Return (if (seq stack)
+               (recur ((first stack) r) (rest stack))
+               (recur (types/mrun  r m) stack))
+      Bind  (if (seq stack)
+               (recur ((first stack) r) (rest stack))
+               (recur (types/mrun r m) stack))
+      Returned  (if (seq stack)
+               (recur ((first stack) r) (rest stack))
+               (recur (types/mrun r m) stack))
+      Cont (let [^Cont r r]
+             (recur (types/mrun (.m r) m) (cons (.f r) stack)))
       r)))
 
 (defmacro monad [& {:as params}]

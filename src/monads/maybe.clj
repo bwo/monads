@@ -27,9 +27,9 @@
   :monadfail {:mfail (constantly nothing)}
   :monadplus {:mzero nothing
               :mplus (fn [lr]
-                       (let [lv (run-monad maybe-m (first lr))]
-                         (or lv
-                             (run-monad maybe-m (second lr)))))})
+                       (->Cont (first lr)
+                               (fn [lv]
+                                 (or lv (->Cont (second lr) identity)))))})
 
 (def m maybe-m)
 (def t maybe-t)
