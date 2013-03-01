@@ -23,13 +23,13 @@
 (defmonad maybe-m
   :return just
   :bind (fn [m f]
-          (when m (f (from-just m))))
+          (when v (run-monad maybe-m (f (from-just v)))))
   :monadfail {:mfail (constantly nothing)}
   :monadplus {:mzero nothing
               :mplus (fn [lr]
-                       (->Cont (first lr)
-                               (fn [lv]
-                                 (or lv (->Cont (second lr) identity)))))})
+                       (let [lv (run-monad maybe-m (first lr))]
+                         (or lv
+                             (run-monad maybe-m (second lr)))))})
 
 (def m maybe-m)
 (def t maybe-t)
