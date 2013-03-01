@@ -28,7 +28,7 @@
     (condp instance? r      
       Return (if (seq stack)
                (recur ((first stack) r) (rest stack))
-               (recur (types/mrun  r m) stack))
+               (recur (types/mrun r m) stack))
       Bind  (if (seq stack)
                (recur ((first stack) r) (rest stack))
                (recur (types/mrun r m) stack))
@@ -37,7 +37,9 @@
                (recur (types/mrun r m) stack))
       Cont (let [^Cont r r]
              (recur (types/mrun (.m r) m) (cons (.f r) stack)))
-      r)))
+      (if (seq stack)
+        (recur ((first stack) r) (rest stack))
+        r))))
 
 (defmacro monad [& {:as params}]
   `(let [params# (s/rename-keys ~params {:>>= :bind})]
