@@ -51,7 +51,7 @@
                       (curryfn [m e]
                         (if-inner-return m
                           (run-reader-t m comp (f e))
-                          (run-reader m comp (f e))))))
+                          (run-reader comp (f e))))))
 
 (defn run-reader [comp e]
   ((run-monad reader-m comp) e))
