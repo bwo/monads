@@ -56,6 +56,9 @@
     (mdo a <- (f acc (first xs))
          (fold-m f a (rest xs)))))
 
+(defn msum [addends]
+  (reduce #(mplus %2 %1) (reverse addends)))
+
 (defn mwhen [p acc]
   (if p
     acc
