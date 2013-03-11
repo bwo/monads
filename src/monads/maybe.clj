@@ -3,6 +3,8 @@
   (:use [monads.types :only [from-just nothing? just nothing maybe]]
         [monads.util :only [lift-m]]))
 
+(declare maybe-t)
+
 (defn- maybe-t* [inner]
   (let [i-return (:return inner)]
     (monad
