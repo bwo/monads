@@ -44,3 +44,6 @@
 
 (defn bintree [n]
   (reduce #(node %2 %1 %1) nil (range n)))
+
+(defn longtree [n]
+  (reduce #(node %2 nil %1) nil (range n)))
