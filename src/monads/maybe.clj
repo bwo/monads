@@ -3,7 +3,7 @@
   (:use [monads.types :only [from-just nothing? just nothing maybe]]
         [monads.util :only [lift-m]]))
 
-(defn maybe-t [inner]
+(defn- maybe-t* [inner]
   (let [i-return (:return inner)]
     (monad
      :return (fn [x] (i-return (just x)))
@@ -16,9 +16,13 @@
      :monadtrans {:lift (partial lift-m just)}
      :monadplus {:mzero (i-return nothing)
                  :mplus (fn [lr]
-                          (let [lv (run-monad (maybe-t inner) (first lr))]
-                            (or lv
-                                (run-monad (maybe-t inner) (second lr)))))})))
+                          (run-mdo inner
+                                   lv <- (run-monad (maybe-t inner) (first lr))
+                                   (if lv
+                                     (return lv)
+                                     (run-monad (maybe-t inner) (second lr)))))})))
+
+(def maybe-t (memoize maybe-t*))
 
 (defmonad maybe-m
   :return just
