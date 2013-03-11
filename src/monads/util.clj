@@ -2,7 +2,7 @@
   (:require [the.parsatron :as parsatron]
             [macroparser.functions :as functions]
             [macroparser.bindings :as bindings])
-  (:use [monads.core :only [mzero >>= mdo return]]))
+  (:use [monads.core :only [mzero >>= mdo return mplus]]))
 
 (defmacro curryfn [& args]
   (let [parsed (parsatron/run (functions/parse-fn-like)
