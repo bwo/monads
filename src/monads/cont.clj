@@ -33,11 +33,28 @@
       :monadtrans {:lift (curryfn [m c] (run-monad inner (>>= m c)))}
       :inner inner)))
 
-(defn run-cont [m c]
+(defn run-cont* [m c]
   (let [m ((run-monad cont-m m) c)]
     (if (cont? m)
       (recur (get-cont m) (get-arg m))
       m)))
+
+(defn run-c* [c f]
+  (if (cont? c)
+    (recur (get-cont c) (get-arg c))
+    (f c)))
+
+(def run-c #(run-c* % identity))
+(def run-cont #(run-cont* % identity))
+
+(defn reset [c]
+  (return (run-cont c)))
+
+(defn shift [f]
+  (Returned.
+   (fn [m]
+     (fn [c]
+       (f #(run-cont (run-c (c %))))))))
 
 (defn run-cont-t [m comp cont]
   (let [comp ((run-monad m comp) cont)]
