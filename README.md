@@ -25,15 +25,39 @@ except list (since the straightforward list-t implementation does not
 always yield a true monad, though I may yet implement
 [logic-t](http://hackage.haskell.org/package/logict)) and identity.
 
-A caveat: both algo.monads and this library will eventually blow the
-stack on deeply nested computations. However, this library blows the
-stack much sooner than does algo.monads. There is a [branch](https://github.com/bwo/monads/tree/tramp) to attempt
-to avoid this by trampolining following [roughly this
-strategy](https://apocalisp.wordpress.com/2011/10/26/tail-call-elimination-in-scala-monads/).
-However, it does complicate the implementation of monads, and result
-in a not insignificant slowdown (the tree-numbering benchmarks goes
-from approximately 800ms, about 54% of the algo.monads time, to
-approximately 2000ms, 136% of the algo.monads time).
+A caveat: use of the "bare" monads (maybe-m, error-m, etc.) is
+vulnerable to stack-blowing on deeply nested computations, e.g. `(msum
+(repeat 4000 mzero))`. This danger can be *mostly* obviated by using
+the transformer version of the monad with cont-m as the base monad:
+
+```clojure
+monads.maybe> (run-monad maybe-m (u/msum (repeat 4000 mzero)))
+; Evaluation aborted.
+monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (u/msum (repeat 4000 mzero))))
+nil
+```
+
+However, this doesn't get around the entire problem: msum is written
+to associate to the right. A left-associative version would still blow
+the stack:
+
+```clojure
+monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce mplus mzero (repeat 4000 mzero))))
+; Evaluation aborted.
+nil
+monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce #(mplus %2 %1) mzero (reverse (repeat 4000 mzero)))))
+nil
+```
+
+There is a [branch](https://github.com/bwo/monads/tree/tramp) that
+attempts to avoid this by essentially making, by hand, every monad a
+monad transformer transforming a trampolining continuation monad;
+however, this approach has several disadvantages: in particular, it
+slows everything down and makes the code more complicated---especially
+the code for the list monad, which has a natural transformation which
+is not lazy, a more complicated translation which is kind of lazy but
+can't be properly lifted into a monad tranformer, and a slightly more
+complicated yet translation which can be lifted but is even less lazy.
 
 ## Usage
 
