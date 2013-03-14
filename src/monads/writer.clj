@@ -80,7 +80,7 @@
        (return (fst p) (f (snd p)))))
 (defn censor [f m]
   (pass (mdo a <- m
-             (return (a, f)))))
+             (return [a f]))))
 
 (def t writer-t)
 (def m writer-m)
