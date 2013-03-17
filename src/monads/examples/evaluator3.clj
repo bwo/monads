@@ -7,7 +7,7 @@
 
 (defn const [x]
   (if (symbol? x)
-    (mdo state <- s/get-state
+    (mdo state <- get-state
          (guard (contains? state x))
          (return (get state x)))
     (return x)))
@@ -16,12 +16,12 @@
 
 (defn calc [op x y msg]
   (mdo
-   (lift (w/tell [(str msg ": " x ", " y)]))
+   (lift (tell [(str msg ": " x ", " y)]))
    (lift-m* op (run x) (run y))))
 
 (defn decl [x y]
   (mdo v <- (run y)
-       (s/modify #(assoc % x v))
+       (modify #(assoc % x v))
        (lift (w/tell [(str "decl " x)]))
        (return v)))
 

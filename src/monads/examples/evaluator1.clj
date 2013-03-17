@@ -5,7 +5,7 @@
 
 (defn const [x]
   (if (symbol? x)
-    (lift-m #(get % x) s/get-state)
+    (lift-m #(get % x) get-state)
     (return x)))
 
 (declare run)
@@ -15,7 +15,7 @@
 
 (defn decl [x y]
   (mdo v <- (run y)
-       (s/modify #(assoc % x v))
+       (modify #(assoc % x v))
        (return v)))
 
 (defn run [op]

@@ -6,20 +6,20 @@
 
 (defn const [x]
   (if (symbol? x)
-    (lift-m #(get % x) s/get-state)
+    (lift-m #(get % x) get-state)
     (return x)))
 
 (declare run)
 
 (defn calc [op x y msg]
   (mdo
-   (lift (w/tell [(str msg ": " x ", " y)]))
+   (lift (tell [(str msg ": " x ", " y)]))
    (lift-m* op (run x) (run y))))
 
 (defn decl [x y]
   (mdo v <- (run y)
-       (s/modify #(assoc % x v))
-       (lift (w/tell [(str "decl " x)]))
+       (modify #(assoc % x v))
+       (lift (tell [(str "decl " x)]))
        (return v)))
 
 (defn run [op]
