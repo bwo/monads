@@ -9,7 +9,7 @@
   (if (symbol? x)
     (mdo state <- get-state
          (if (not (contains? state x))
-           (lift (lift (error/throw-error (str "no value for name: " x))))
+           (lift (lift (throw-error (str "no value for name: " x))))
            (return (get state x))))
     (return x)))
 

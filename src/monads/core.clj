@@ -71,6 +71,11 @@
   (pass (mdo a <- m
              (return [a f]))))
 
+;; monaderror
+(defn throw-error [e]
+  (Returned. (fn [m] ((-> m :monaderror :throw-error) e))))
+(defn catch-error [comp handler]
+  (Returned. (fn [m] ((-> m :monaderror :catch-error) comp handler))))
 
 ;;; utils
 

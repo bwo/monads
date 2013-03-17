@@ -24,7 +24,13 @@
                                    l <- (run-monad (error-t inner) (first lr))
                                    (if (left? l)
                                      (run-monad (error-t inner) (second lr))
-                                     l)))})))
+                                     l)))}
+     :monaderror {:throw-error (comp i-return left)
+                  :catch-error (fn [comp handler]
+                                 (run-mdo inner
+                                          v <- (run-monad (error-t inner) comp)
+                                          (either #(run-monad (error-t inner) (handler %))
+                                                  (comp i-return right) v)))})))
 
 (let [mzero (left nil)]
   (defmonad error-m
@@ -38,21 +44,11 @@
                          (let [v (run-monad error-m (first lr))]
                            (if (left? v)
                              (run-monad error-m (second lr))
-                             v)))}))
-
-(defn throw-error [e] (Returned. (fn [m]
-                                   (if-inner-return m
-                                     (i-return (left e))
-                                     (left e)))))
-(defn catch-error [comp handler]
-  (Returned. (fn [m]
-               (if-inner-return m
-                 (run-mdo (:inner m)
-                          v <- (run-monad m comp)
-                          (either #(run-monad m (handler %))
-                                  (comp i-return right) v))
-                 (let [v (run-monad m comp)]
-                   (either #(run-monad m (handler %)) right v))))))
+                             v)))}
+    :monaderror {:throw-error left
+                 :catch-error (fn [comp handler]
+                                (let [v (run-monad error-m comp)]
+                                  (either #(run-monad m (handler %)) right v)))}))
 
 (def error-t (memoize error-t*))
 
