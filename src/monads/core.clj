@@ -41,6 +41,13 @@
 
 (defn lift [inner]
   (Returned. (fn [m] ((-> m :monadtrans :lift) inner))))
+
+;; monadstate
+(def get-state
+  (Returned. (fn [m] (-> m :monadstate :get-state))))
+(defn put-state [v]
+  (Returned. (fn [m] ((-> m :monadstate :put-state) v))))
+(defn modify [f] (>>= get-state (comp put-state f)))
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]

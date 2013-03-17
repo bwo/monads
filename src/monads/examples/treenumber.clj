@@ -1,6 +1,6 @@
 (ns monads.examples.treenumber
   (:require [monads.core :refer :all]
-            [monads.state :refer :all]))
+            [monads.state :as s]))
 
 ;; tree-numbering.
 ;; Our trees: {:val int :left tree :right tree}, or nil
@@ -26,7 +26,7 @@
          nt2 <- (number-tree right)
          (return (node num nt1 nt2)))))
 (defn num-tree [t]
-  (eval-state (number-tree t) {}))
+  (s/eval-state (number-tree t) {}))
 
 (def a-tree (node "a"
                   (node "a" nil (node "c"

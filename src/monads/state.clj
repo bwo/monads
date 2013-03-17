@@ -1,5 +1,5 @@
 (ns monads.state
-  (:require [monads.core :refer :all])
+  (:require [monads.core :refer :all :exclude [get-state put-state modify]])
   (:use [monads.types :only [fst snd]]
         [monads.util :only [curryfn lazy-pair if-inner-return lift-m]])
   (:import [monads.types Returned Pair]))
@@ -32,14 +32,13 @@
                                (lazy-pair
                                 (run-state-t (state-t inner) (first leftright) s)
                                 (run-state-t (state-t inner) (second leftright) s))))}))
+     :monadstate {:get-state (fn [s] (i-return (Pair. s s)))
+                  :put-state (curryfn [v _] (i-return (Pair. v v)))}
      :monadtrans {:lift (curryfn [m s]
                           (run-mdo inner
                                    v <- m
                                    (return (Pair. v s))))})))
 (def state-t (memoize state-t*))
-
-(defn state-return [x]
-  (fn inner-state-return [s] (Pair. x s)))
 
 (declare run-state)
 
@@ -48,21 +47,12 @@
   :bind (fn [m f]
           (fn [s]
             (let [^Pair p (m s)]
-              (run-state (f (fst p)) (snd p))))))
+              (run-state (f (fst p)) (snd p)))))
+  :monadstate {:get-state (fn [s] (Pair. s s))
+               :put-state (curryfn [v _] (Pair. v v))})
 
 (defn run-state [computation initial-state]
   ((run-monad state-m computation) initial-state))
-
-(def get-state (Returned. (curryfn [m s]
-                            (if-inner-return m
-                              (i-return (Pair. s s))
-                              (Pair. s s)))))
-
-(defn put-state [v] (Returned. (curryfn [m s]
-                                 (if-let [i-return (-> m :inner :return)]
-                                   (i-return (Pair. nil v))
-                                   (Pair. nil v)))))
-(defn modify [f] (>>= get-state (comp put-state f)))
 
 (def eval-state (comp fst run-state))
 (def exec-state (comp snd run-state))
