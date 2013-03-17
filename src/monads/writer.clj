@@ -29,6 +29,16 @@
                               (i-plus (lazy-pair
                                        (run-monad (writer-t inner) (first lr))
                                        (run-monad (writer-t inner) (second lr)))))}))
+     :monadwriter {:tell (fn [w] (i-return (Pair. nil w)))
+                   :listen (fn [comp]
+                             (run-mdo inner
+                                      ^Pair p <- (run-monad (writer-t inner) comp)
+                                      (return (Pair. [(fst p) (snd p)] (snd p)))))
+                   :pass (fn [comp]
+                           (run-mdo inner
+                                    ^Pair p <- (run-monad (writer-t inner) comp)
+                                    (return (Pair. (first (fst p))
+                                                   ((second (fst p)) (snd p))))))}
      :bind (fn [m f]
              (run-mdo inner
                       ^Pair p <- (run-monad (writer-t inner) m)
@@ -48,39 +58,16 @@
                 ^Pair p (run-monad writer-m (f a))
                 b (fst p)
                 w' (snd p)]
-            (Pair. b (<> w w')))))
+            (Pair. b (<> w w'))))
+  :monadwriter {:tell (fn [w] (Pair. nil w))
+                :listen (fn [comp]
+                          (let [^Pair p (run-monad writer-m comp)]
+                            (Pair. [(fst p) (snd p)] (snd p))))
+                :pass (fn [comp]
+                        (let [^Pair p (run-monad writer-m comp)]
+                          (Pair. (first (fst p))
+                                 ((second (fst p)) (snd p)))))})
 
-(defn tell [w] (Returned. (fn [m]
-                            (if-inner-return m
-                              (i-return (Pair. nil w))
-                              (Pair. nil w)))))
-
-(defn listen [comp] (Returned.
-                     (fn [m]
-                       (if-inner-return m
-                        (run-mdo (:inner m)
-                                 ^Pair p <- (run-monad m comp)
-                                 (return (Pair. [(fst p) (snd p)] (snd p))))
-                        (let [^Pair p (run-monad m comp)]
-                          (Pair. [(fst p) (snd p)] (snd p)))))))
-
-(defn pass [comp] (Returned.
-                   (fn [m]
-                     (if-inner-return m
-                       (run-mdo (:inner m)
-                                ^Pair p <- (run-monad m comp)
-                                (return (Pair. (first (fst p))
-                                               ((second (fst p)) (snd p)))))
-                       (let [^Pair p (run-monad m comp)]
-                         (Pair. (first (fst p))
-                                ((second (fst p)) (snd p))))))))
-
-(defn listens [f m]
-  (mdo p <- (listen m)
-       (return (fst p) (f (snd p)))))
-(defn censor [f m]
-  (pass (mdo a <- m
-             (return [a f]))))
 
 (def t writer-t)
 (def m writer-m)

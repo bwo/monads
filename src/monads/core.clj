@@ -4,7 +4,7 @@
             [the.parsatron :as parsatron]
             [macroparser.bindings :as bindings]
             [macroparser.monads :as parser])
-  (:import [monads.types Return Returned Bind]))
+  (:import [monads.types Return Returned Bind Pair]))
 
 (set! *warn-on-reflection* true)
 
@@ -48,6 +48,30 @@
 (defn put-state [v]
   (Returned. (fn [m] ((-> m :monadstate :put-state) v))))
 (defn modify [f] (>>= get-state (comp put-state f)))
+
+;;monadwriter
+(defn tell [w]
+  (Returned. (fn [m] ((-> m :monadwriter :tell) w))))
+
+(defn listen [comp]
+  (Returned. (fn [m] ((-> m :monadwriter :listen) comp))))
+
+;; haskell dox:
+;; | @'pass' m@ is an action that executes the action @m@, which returns
+;; a value and a function, and returns the value, applying the function
+;; to the output.
+(defn pass [comp]
+  (Returned. (fn [m] ((-> m :monadwriter :pass) comp))))
+
+(defn listens [f m]
+  (mdo ^Pair p <- (listen m)
+       (return (types/fst p) (f (types/snd p)))))
+
+(defn censor [f m]
+  (pass (mdo a <- m
+             (return [a f]))))
+
+
 ;;; utils
 
 (defn- unparse-m-expr [inside outside]
