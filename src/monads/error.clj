@@ -48,7 +48,7 @@
     :monaderror {:throw-error left
                  :catch-error (fn [comp handler]
                                 (let [v (run-monad error-m comp)]
-                                  (either #(run-monad m (handler %)) right v)))}))
+                                  (either #(run-monad error-m (handler %)) right v)))}))
 
 (def error-t (memoize error-t*))
 
