@@ -35,7 +35,7 @@
                                    a <- (run-monad (list-t inner) (first lr))
                                    b <- (run-monad (list-t inner) (second lr))
                                    (return (concat a b))))}
-     :monadtrans {:list (fn [m]
+     :monadtrans {:lift (fn [m]
                           (run-mdo inner
                                    a <- (run-monad (list-t inner) m)
                                    (return (list a))))})))
