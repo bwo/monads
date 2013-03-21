@@ -267,28 +267,6 @@ protocol-monads, which, as I mentioned, I haven't actually used):
   `sequence-t` monad transformer in algo.monads needs the
   `which-m-plus` parameter, which shouldn't be necessary at all:
 
-   ```haskell
-   https://github.com/bwo/monads/wiki/An-expression-evaluator):
-  morph requires that a special return function be defined for the
-  transformer in question, a special lift function, etc., because it
-  cannot allow a single generic "return", "lift", etc. The result is
-  difficult to change, because assumed evaluation strategy is
-  pervasive.
-
-  This is the problem that symbol macros solve in algo.monads: the
-  supposedly bare `return` in something like `(return 3)` in fact ends
-  up getting the proper return method, through complicated macrology,
-  passed in.
-
-- Monad transformers are unnecessarily confusing
-
-  This may admittedly be a personal problem, but monad transformers
-  for both algo.monads and morph strike me as harder and more
-  complicated to implement than they need to be. It isn't clear, to
-  me, how to lift computations up the stack (which is why the
-  `sequence-t` monad transformer in algo.monads needs the
-  `which-m-plus` parameter, which shouldn't be necessary at all:
-
   ```clojure
   monads.list> (run-monad (list-t monads.maybe/m) (mplus (return 5) (return 3)))
   #<Just (5 3)>
