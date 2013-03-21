@@ -13,24 +13,168 @@ results](https://github.com/bwo/monads/wiki/Tree-numbering-benchmark).
 The idiom is unabashedly Haskell-derived: the bind function, for
 instance, is spelled `>>=`, and the special syntax, `mdo`, apes
 Haskell's do-notation far more closely than does `algo.monads`'
-`domonad`. (A
-[justification/rant](https://bitbucket.org/kenko/macroparser/src/eb372fec0e3a30daf7e8d946cacea4ceba86a0ea/src/macroparser/monads.clj?at=default#cl-7)
-on this topic is available.)
+`domonad`. 
 
 There are some code examples and some benchmarking on the [wiki](https://github.com/bwo/monads/wiki).
 
 Implementations are provided for reader, list, maybe, identity,
-continuation, state, and error monads, and with transformers for all
-except list (since the straightforward list-t implementation does not
-always yield a true monad, though I may yet implement
-[logic-t](http://hackage.haskell.org/package/logict)) and identity.
+continuation, state, and error monads, with transformers for all
+(though be aware that the list-t implementation does not always yield
+a true monad).
 
-A caveat: use of the "bare" monads (maybe-m, error-m, etc.) is
-vulnerable to stack-blowing on deeply nested computations, e.g. `(msum
-(repeat 4000 mzero))`. This danger can be *mostly* obviated by using
-the transformer version of the monad with cont-m as the base monad:
+## Library organization
+
+Everything necessary to build up monadic computations is defined in
+`monads.core`; several additional derived utility functions (`lift-m`,
+`guard`, `fold-m`, etc.) live in `monads.util`. Individual monads and
+their transformers are all in their own namespaces: `error-m` and
+`error-t` live in `monads.error`, etc. Each such namespace also
+defines a single-letter alias for the monad and transformer, `m` and
+`t`, so that if you require `[monads.error :as error]` you can then
+refer to the monad simply as `error/m` rather than as `error/error-m`.
+
+Several of the monads (state, error, writer, and maybe) return custom
+types whose accessors and constructors live in `monads.types`.
+
+## Usage
+
+Monadic computations are run using `run-monad`. Its first argument is
+the monad to use; its second is the computation to run.
+
+The reader, state, and continuation monads return do not immediately
+return the value actually of interest; they have special
+`run-{reader,state,cont}{,-t}` functions which should be used instead.
+For `run-{reader,state,cont}`, since the monad is already known, it
+does not need to be passed. The run functions for the reader and state
+monads also have an additional parameter, representing the environment
+and initial state, respectively.
+
+All monads support the basic `>>=` and `return` operations; all
+transformers additionally support the `lift` operation that lifts a
+computation in the base monad into the monad transformer.
+
+Additional operations are supported only by some monads: 
+
+- `mfail`: supported by `maybe` and `error`. Any monad transformer
+   transforming a monad that supports these also supports them.
+   the result of any transformer whose argument supports it.
+- `mzero`, `mplus`: supported by `maybe`, `error`, and `list`. Any
+   monad transformer transforming a monad that supports these also
+   supports them.
+- `get-state`, `put-state`, `modify`: supported by `state`.
+- `throw-error`, `catch-error`: supported by `error`.
+- `callcc`: supported by `cont`.
+- `ask`, `asks`, `local`: supported by `reader`.
+- `tell`, `pass`, `listen`, `listens`, `censor`: supported by
+   `writer`.
+
+All of these except `callcc` are implemented in a monad-agnostic way:
+it is possible to define additional monads that implement any of them
+without changing the existing code.
+
+## Utility functions
+
+A (not very systematic) selection of monad functions is provided in
+`monads.util`:
+
+- `(sequence-m ms)`: transform a sequence of monadic actions into a
+    monadic action yielding a sequence. (That is, go from `[m a]` to
+    `m [a]`.)
+- `(mwhen p m)`: execute monadic computation `m` if `p` is truthy.
+- `(guard p)`: exit from the computation if `p` is falsy (requires
+   `mzero`).
+- `(lift-m f [m])`: lift the unary function `f` to be
+    monadic, returning the monadic function with one arg or applying it
+    immediately with two.
+- `(lift-m-2 f [m [m2]])`: as `lift-m` but for binary functions.
+- `(lift-m* f [& args])`: as `lift-m` but for arbitrary arities. (N.B.
+  this is implemented using sequence-m and appears to behave
+  unexpectedly in the context of the continuation monad's `shift` and
+  `reset`, but those should probably be considered experimental for
+  the time being).
+- `ap`: lifts function application, but only for curried functions:
+
+   ```clojure
+   (run-monad maybe-m (ap (ap (return (curryfn #(+ %1 %2))) (return 1)) (return 2)))
+   #<Just 3>
+   ```
+
+   `lift-m*` is likelier to be useful, unless you happen to have a lot
+   of curried functions lying around.
+- `(fold-m f init xs)`: apply a reduction within a monad. NB: the
+   arguments here  are as in Haskell's `foldM`, and *not* as in
+   `algo.monads`' `m-reduce`! `fold-m` expects `f` to have type `a ->
+   b -> m a`, `init` to have type `a`, and `xs` to have type `[b]`,
+   whereas `m-reduce` expects `f` to have type `a -> b -> a`, `init`
+   to have  type `a`, and `xs` to have type `[m b]`.
+- `(msum [...])` "adds" the elements of its argument list with `mplus`.
+
+Further such functions are easily defined. This, for instance, is the
+definition of `guard`:
 
 ```clojure
+(defn guard [p]
+  (if p
+    (return nil)
+    mzero))
+```
+
+## Implementation
+
+Monads are implemented as maps; there are `monad` and `defmonad`
+macros, but all they do is allow a tiny bit of syntactic flexibility
+and ensure that there are at least implementations of `>>=` and
+`return`. The following definitions of the identity monad are equivalent:
+
+```clojure
+(defmonad identity-m
+  :bind (fn [m f] (run-monad identity-m (f m)))
+  :return identity)
+
+(def identity-m {:bind (fn [m f] (run-monad identity-m (f m)))
+                 :return identity})
+```
+
+The `>>=` and `return` operations simply package their operands up
+into data structures which can then be interpreted by `run-monad`.
+
+A monad supports the additional operations listed above by containing
+additional nested maps. For example, the error monad:
+
+```clojure
+(let [mzero (left nil)]
+  (defmonad error-m
+    :return right
+    :bind (fn [m f]
+            (let [r (run-monad error-m m)]
+              (either left #(run-monad error-m (f %)) r)))
+    :monadfail {:mfail left}
+    :monadplus {:mzero mzero
+                :mplus (fn [lr]
+                         (let [v (run-monad error-m (first lr))]
+                           (if (left? v)
+                             (run-monad error-m (second lr))
+                             v)))}
+    :monaderror {:throw-error left
+                 :catch-error (fn [comp handler]
+                                (let [v (run-monad error-m comp)]
+                                  (either #(run-monad m (handler %)) right v)))}))
+```
+
+The values `mzero`, `mplus`, etc. defined in `monads.core`, in turn,
+are or return values that, when run by run-monad, know how to look
+themselves up in the monad and find their implementations.
+
+## A caveat about the stack
+
+The use of the "bare" monads (maybe-m, error-m, etc.) is vulnerable to
+stack-blowing on deeply nested computations, e.g. `(msum (repeat 4000
+mzero))`. This danger can be *mostly* obviated by using the
+transformer version of the monad with cont-m as the base monad:
+
+```clojure
+monads.maybe> (require '[monads.util :as u] '[monads.cont :as c])
+nil
 monads.maybe> (run-monad maybe-m (u/msum (repeat 4000 mzero)))
 ; Evaluation aborted.
 monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (u/msum (repeat 4000 mzero))))
@@ -58,98 +202,102 @@ the code for the list monad, which has a natural transformation which
 is not lazy, a more complicated translation which is kind of lazy but
 can't be properly lifted into a monad tranformer, and a slightly more
 complicated yet translation which can be lifted but is even less lazy.
+(However, if anyone wants to show me how to, or contribute code to,
+make the list monad lazy, play nice with transformers, and be
+trampolined, I would be most appreciative.)
 
-## Usage
+## Why another monad implementation?
 
-Monadic computations are run using `run-monad`, or, for the reader,
-state, and continuation monads, special `run-{reader,state,cont}{,-t}`
-functions that accept additional parameters and unwrap the results
-(usually just by applying a function).
+There are three other monad implementations for clojure that I know
+of: [algo.monads](https://github.com/clojure/algo.monads),
+[morph](https://github.com/blancas/morph), and Jim Duey's
+[protocol-monads](https://github.com/jduey/protocol-monads/tree/master/src)
+(which I haven't used). This implementation exists in part just
+because I wanted to see if I could write a reasonably complete monad
+implementation without using protocols (for reasons discussed below)
+or algo.monads' symbol macros (because symbol macros get around one of
+the problems with protocols, but seem otherwise inelegant given the
+way they're implemented in Clojure), but partly in reaction to some
+perceived flaws of the existing implementations (aside from
+protocol-monads, which, as I mentioned, I haven't actually used):
 
-Monads themselves are just maps; at a minimum they should have a
-`:bind` key giving the implementation of `>>=` and a `:return` key
-giving the implementation of `return`. There are `defmonad` and
-`monad` macros that check this. Monad transformers are implented as
-functions whose arguments are the monads to be transformed; the
-returned map should additionally have an `:inner` key whose value is
-the monad "one layer down" in the stack.
+- Both morph and algo.monads are incorrect.
 
-All the monad implementations live in same-named namespaces, e.g.
-`monads.reader` contains `reader-m` and `reader-t`. (The monads and
-the transformers also have single-letter aliases; given a `(require
-[monads.reader :as reader])`, one may refer to the transformer as
-`reader/t` rather than `reader/reader-t`).
+  If `f` is a function `a -> m b`, then `(>>= (return a) f)` is
+  supposed to be equivalent to `(f a)` for all `a`. morph breaks this
+  for both its either and maybe monads; algo.monads for its maybe
+  monad. (There is an
+  [issue](http://dev.clojure.org/jira/browse/ALGOM-7) for this on the
+  algo.monads JIRA, but AFAICT no action.)
 
-All monads support the basic `>>=` and `return` operations; all
-transformers additionally support `lift`. Additional operations are
-supported by only some monads (suffixless names are given in this
-list; the base monads are formed by suffixing `-m`, the transformers
-by suffixing `-t`):
+  Additionally, algo.monads' continuation monad does not trampoline,
+  which means it cannot be used to avoid overflowing the stack (though
+  it should be admitted that my implementation overflows the stack
+  sooner than algo.monads does). This is not, technically, incorrect,
+  but I do think trampolining here is preferable.
 
-- `mfail`: supported by `maybe` and `error`. Any monad transformer
-   transforming a monad that supports these also supports them.
-   the result of any transformer whose argument supports it.
-- `mzero`, `mplus` (i.e., Haskell's MonadPlus typeclass): supported by
-   `maybe`, `error`, and `list`. Any monad transformer transforming a
-   monad that supports these also supports them.
-- `get-state`, `put-state`, `modify`: supported by `state`.
-- `throw-error`, `catch-error`: supported by `error`.
-- `callcc`: supported by `cont`.
-- `ask`, `asks`, `local`: supported by `reader`.
-- `tell`, `pass`, `listen`, `listens`, `censor`: supported by
-   `writer`.
+- Protocol-based implementations are inexpressive.
 
-There are also some generic functions defined in terms of the above
-(in fact some of the above are actually not primitive; for instance,
-`modify` is defined in terms of `get-state` and `put-state`):
+  Consider the implementation of `guard` above. It would not be
+  possible to write this using a protocol-based implementation: the
+  sole argument is a boolean(-ish) value, so there is no way to select
+  the right implementation of `return`, let alone the right value for
+  `mzero`. One of the promises of monads is that code can be agnostic
+  as to the eventual execution strategy, and the same code can be
+  executed with multiple strategies. Compare the [monad transformer
+  example](https://github.com/blancas/morph/wiki/Composing-Monads) in
+  morph to [those using this
+  library](https://github.com/bwo/monads/wiki/An-expression-evaluator):
+  morph requires that a special return function be defined for the
+  transformer in question, a special lift function, etc., because it
+  cannot allow a single generic "return", "lift", etc. The result is
+  difficult to change, because assumed evaluation strategy is
+  pervasive.
 
-- `(sequence-m ms)`: transform a sequence of monadic actions into a
-    monadic action yielding a sequence. (That is, go from `[m a]` to
-    `m [a]`.)
-- `(mwhen p m)`: execute monadic computation `m` if `p` is truthy.
-- `(guard p)`: exit from the computation if `p` is falsy (requires
-   `mzero`).
-- `(lift-m f [m])`: lift the unary function `f` to be
-    monadic, returning the monadic function with one arg or applying it
-    immediately with two.
-- `(lift-m-2 f [m [m2]])`: as `lift-m` but for binary functions.
-- `(lift-m* f [& args])`: as `lift-m` but for arbitrary arities.
-- `ap`: lifts function application, but only for curried functions:
+  This is the problem that symbol macros solve in algo.monads: the
+  supposedly bare `return` in something like `(return 3)` in fact ends
+  up getting the proper return method, through complicated macrology,
+  passed in.
 
-   ```clojure
-   (run-monad maybe-m (ap (ap (return (curryfn #(+ %1 %2))) (return 1)) (return 2)))
-   #<Just 3>
-   ```
+- Monad transformers are unnecessarily confusing
 
-   `lift-m*` is likelier to be useful.
-- `(fold-m f init xs)`: apply a reduction within a monad. NB: the
-   arguments here  are as in Haskell's `foldM`, and *not* as in
-   `algo.monads`' `m-reduce`! `fold-m` expects `f` to have type `a ->
-   b -> m a`, `init` to have type `a`, and `xs` to have type `[b]`,
-   whereas `m-reduce` expects `f` to have type `a -> b -> a`, `init`
-   to have  type `a`, and `xs` to have type `[m b]`.
+  This may admittedly be a personal problem, but monad transformers
+  for both algo.monads and morph strike me as harder and more
+  complicated to implement than they need to be. It isn't clear, to
+  me, how to lift computations up the stack (which is why the
+  `sequence-t` monad transformer in algo.monads needs the
+  `which-m-plus` parameter, which shouldn't be necessary at all:
 
-Further such functions are easily defined (and I intend to add
-analogues for many of those in the Haskell Prelude). This, for
-instance, is the definition of `guard`:
+   ```haskell
+   https://github.com/bwo/monads/wiki/An-expression-evaluator):
+  morph requires that a special return function be defined for the
+  transformer in question, a special lift function, etc., because it
+  cannot allow a single generic "return", "lift", etc. The result is
+  difficult to change, because assumed evaluation strategy is
+  pervasive.
 
-```clojure
-(defn guard [p]
-  (if p
-    (return nil)
-    mzero))
-```
+  This is the problem that symbol macros solve in algo.monads: the
+  supposedly bare `return` in something like `(return 3)` in fact ends
+  up getting the proper return method, through complicated macrology,
+  passed in.
 
-Never before has performing analogues of addition been more exciting:
+- Monad transformers are unnecessarily confusing
 
-```clojure
-user> (run-reader-t (reader-t maybe-m) (mplus mzero (asks inc)) 4)
-#<Just 5>
-user> ((run-state-t (state-t (reader-t maybe-m)) (mplus mzero (lift (asks inc))) 4) 1)
-#<Just #<Pair [2 4]>>
-user> ((eval-state-t (state-t (reader-t list-m)) (mplus get-state (lift (asks inc))) 4) 1)
-(4 2)
-```
+  This may admittedly be a personal problem, but monad transformers
+  for both algo.monads and morph strike me as harder and more
+  complicated to implement than they need to be. It isn't clear, to
+  me, how to lift computations up the stack (which is why the
+  `sequence-t` monad transformer in algo.monads needs the
+  `which-m-plus` parameter, which shouldn't be necessary at all:
+
+  ```clojure
+  monads.list> (run-monad (list-t monads.maybe/m) (mplus (return 5) (return 3)))
+  #<Just (5 3)>
+  monads.list> (run-monad (list-t monads.maybe/m) (lift (mplus (return 5) (return 3))))
+  #<Just (5)>
+  ```
+
+  ), and constructing many layers of monads seems very tricky.
 
 ## License
 
