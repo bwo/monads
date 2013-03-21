@@ -139,7 +139,7 @@ The `>>=` and `return` operations simply package their operands up
 into data structures which can then be interpreted by `run-monad`.
 
 A monad supports the additional operations listed above by containing
-additional nested maps. For example, the error monad:
+additional nested maps. For example, the error monad looks like this:
 
 ```clojure
 (let [mzero (left nil)]
