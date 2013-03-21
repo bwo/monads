@@ -92,3 +92,11 @@
   (Returned. (fn [m] ((-> m :monaderror :throw-error) e))))
 (defn catch-error [comp handler]
   (Returned. (fn [m] ((-> m :monaderror :catch-error) comp handler))))
+
+;; monadreader
+(def ask (Returned. (fn [m] (-> m :monadreader :ask))))
+(defn local [f comp] (Returned. (fn [m] ((-> m :monadreader :local) f comp))))
+
+(defn asks [f]
+  (mdo x <- ask
+       (return (f x))))

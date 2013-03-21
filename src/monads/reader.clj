@@ -19,6 +19,10 @@
                         a <- (m e)
                         (run-reader-t (reader-t inner) (f a) e))))
      :monadtrans {:lift constantly}
+     :monadreader {:ask (fn [e] (i-return e))
+                   :local (fn [f comp]
+                            (fn [e]
+                              (run-reader-t (reader-t inner) comp (f e))))}
      :monadplus (when (:monadplus inner)
                   (let [i-zero (-> inner :monadplus :mzero)
                         i-plus (-> inner :monadplus :mplus)]
@@ -36,22 +40,11 @@
   :return constantly
   :bind (fn [m f]
           (fn [e]
-            (run-reader (f (run-reader m e)) e))))
-
-(def ask (Returned. (fn [m]
-                      (if-inner-return m
-                        i-return
-                        identity))))
-;; or: (defn asks [f] (lift-m f ask))
-(defn asks [f] (Returned. (fn [m]
-                           (if-inner-return m
-                             (comp i-return f)
-                             f))))
-(defn local [f comp] (Returned.
-                      (curryfn [m e]
-                        (if-inner-return m
-                          (run-reader-t m comp (f e))
-                          (run-reader comp (f e))))))
+            (run-reader (f (run-reader m e)) e)))
+  :monadreader {:ask (fn [e] e)
+                :local (fn [f comp]
+                         (fn [e]
+                           (run-reader comp (f e))))})
 
 (defn run-reader [comp e]
   ((run-monad reader-m comp) e))
