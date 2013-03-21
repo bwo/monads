@@ -37,7 +37,7 @@
                                    (return (concat a b))))}
      :monadtrans {:lift (fn [m]
                           (run-mdo inner
-                                   a <- (run-monad (list-t inner) m)
+                                   a <- m
                                    (return (list a))))})))
 (def list-t (memoize list-t*))
 
