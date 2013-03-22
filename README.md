@@ -25,15 +25,18 @@ a true monad).
 ## Library organization
 
 Everything necessary to build up monadic computations is defined in
-`monads.core`: the basic functions are `>>=` (the bind function, like
-algo.monads' `m-bind`) and `return`. several additional derived
-utility functions (`lift-m`, `guard`, `fold-m`, etc.) live in
-`monads.util`. Individual monads and their transformers are all in
-their own namespaces: `error-m` and `error-t` live in `monads.error`,
-etc. Each such namespace also defines a single-letter alias for the
-monad and transformer, `m` and `t`, so that if you require
-`[monads.error :as error]` you can then refer to the monad simply as
-`error/m` rather than as `error/error-m`.
+`monads.core`: the basic functions are `return`, to inject a value
+into a monad, and `>>=`, to chain a monadic value with a function (as
+in algo.monads' `m-bind`). There is also a convenience macro `mdo`
+that makes expressing computations much simpler.
+
+Several additional derived utility functions (`lift-m`, `guard`,
+`fold-m`, etc.) live in `monads.util`. Individual monads and their
+transformers are all in their own namespaces: `error-m` and `error-t`
+live in `monads.error`, etc. Each such namespace also defines a
+single-letter alias for the monad and transformer, `m` and `t`, so
+that if you require `[monads.error :as error]` you can then refer to
+the monad simply as `error/m` rather than as `error/error-m`.
 
 Several of the monads (state, error, writer, and maybe) return custom
 types whose accessors and constructors live in `monads.types`.
