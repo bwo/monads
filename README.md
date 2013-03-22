@@ -306,12 +306,12 @@ nil
 ```
 
 There is a [branch](https://github.com/bwo/monads/tree/tramp) that
-attempts to avoid this by essentially making, by hand, every monad a
-monad transformer transforming a trampolining continuation monad;
-however, this approach has several disadvantages: in particular, it
-slows everything down and makes the code more complicated---especially
-the code for the list monad, which has a natural transformation which
-is not lazy, a more complicated translation which is kind of lazy but
+attempts to avoid this essentially by translating every monad's
+implementation into CPS in a trampolining continuation monad; however,
+this approach has several disadvantages: in particular, it slows
+everything down and makes the code more complicated---especially the
+code for the list monad, which has a natural transformation which is
+not lazy, a more complicated translation which is kind of lazy but
 can't be properly lifted into a monad tranformer, and a slightly more
 complicated yet translation which can be lifted but is even less lazy.
 (However, if anyone wants to show me how to, or contribute code to,
