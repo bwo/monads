@@ -119,6 +119,108 @@ definition of `guard`:
     mzero))
 ```
 
+## Special syntax
+
+While it is perfectly possible to write monadic computations as chains
+of `>>=` and anonymous functions, this quickly becomes tedious; a
+macro, `mdo`, is provided to make things simpler. As noted above, the
+syntax is very much derived from Haskell.
+
+There are three types of elements of an `mdo` form:
+
+- *binding* elements, which have the form `destructure <- expression`;
+
+- *plain* elements, which are just expressions (except that no such
+   expression can consist solely of the symbol `<-` or the symbol
+   `let`);
+
+- *let* elements, which have the form `let destructure = expression`
+   (or `let destructure1 = expression1, destructure2 = expression2,
+   ...`. The commas here are just for presentation; since the reader
+   gobbles them up, they aren't (and can't be) necessary to the
+   syntax).
+
+The final element of an `mdo` form must be a plain element.
+
+In the above `destructure` can be any valid Clojure binding form. The
+expression on the left-hand side of a binding element, and the
+expression in a plain element, should have a monadic value; these are
+unwrapped and bound to the binding form on the right-hand side of the
+binding element, if there is one. Bindings established with `let`
+forms are, by contrast, pure (or at least treated as pure). Both forms
+of bindings are visible in all following statements (if not shadowed,
+of course).
+
+So the following, for instance, is a not very interesting computation
+in the state monad:
+
+```clojure
+(mdo {:keys [x y]} <- get-state
+     let z = (+ (* x x) (* y y))
+     (modify #(assoc % :z z))
+     (return z)
+```
+
+It does what you would expect:
+
+```clojure
+> (def m (mdo {:keys [x y]} <- get-state
+              let z = (+ (* x x) (* y y))
+              (modify #(assoc % :z z))
+              (return z)))
+> (run-state m {:x 1 :y 3})
+#<Pair [10 {:z 10, :y 3, :x 1}]>
+```
+
+And expands into uses of `>>=` and anonymous functions:
+
+```clojure
+(>>=
+ get-state
+ (fn [{:keys (x y)}]
+     (let [z (+ (* x x) (* y y))]
+       (>>= (modify #(assoc % :z z)) (fn [G__6125] (return z))))))
+```
+
+In fact, the "let" form is not really necessary; we could have omitted
+it and simply written this:
+
+```clojure
+(mdo {:keys [x y]} <- get-state
+     (let [z (+ (* x x) (* y y))]
+       (mdo (modify #(assoc % :z z))
+            (return z))))
+```
+
+And only suffered a little indentation. Similarly, there is no need
+for special syntax for `if` or `when` (and none is provided); just as
+we can write this code:
+
+```clojure
+monads.list> (def pythags (mdo a <- (range 1 200)
+                               b <- (range (inc a) 200)
+                               let a2+b2 = (+ (* a a) (* b b))
+                               c <- (range 1 200)
+                               (monads.util/guard (== (* c c) a2+b2))
+                               (return (list a b c))))
+#'monads.list/pythags
+monads.list> (take 3 (run-monad list-m pythags))
+((3 4 5) (5 12 13) (6 8 10))
+```
+
+We could have spliced in the definition of guard, like this:
+
+```clojure
+monads.list> (def pythags (mdo a <- (range 1 200)
+                               b <- (range (inc a) 200)
+                               let a2+b2 = (+ (* a a) (* b b))
+                               c <- (range 1 200)
+                               (if (== (* c c) a2+b2)
+                                   (return nil)
+                                   mzero)
+                               (return (list a b c))))
+```
+
 ## Implementation
 
 Monads are implemented as maps; there are `monad` and `defmonad`
@@ -163,7 +265,13 @@ additional nested maps. For example, the error monad looks like this:
 
 The values `mzero`, `mplus`, etc. defined in `monads.core`, in turn,
 are or return values that, when run by run-monad, know how to look
-themselves up in the monad and find their implementations.
+themselves up in the monad and find their implementations. Thus, you
+can provide a monad that implements `throw-error` and `catch-error`,
+or `ask` and `local`, etc., without using the existing error or reader
+monads. (For instance, you could define a read-write-state monad that
+combines the operations of the reader, writer, and state monads in
+one, without the overhead of lifting or excessive wrapping and
+unwrapping.)
 
 ## A caveat about the stack
 
