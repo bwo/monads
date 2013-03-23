@@ -213,7 +213,8 @@ monads.list> (take 3 (run-monad list-m pythags))
 ((3 4 5) (5 12 13) (6 8 10))
 ```
 
-We could have spliced in the definition of guard, like this:
+We could have taken advantage of the fact that the return is the only
+statement following the guard:
 
 ```clojure
 monads.list> (def pythags (mdo a <- (range 1 200)
@@ -221,9 +222,8 @@ monads.list> (def pythags (mdo a <- (range 1 200)
                                let a2+b2 = (+ (* a a) (* b b))
                                c <- (range 1 200)
                                (if (== (* c c) a2+b2)
-                                   (return nil)
+                                   (return (list a b c))
                                    mzero)
-                               (return (list a b c))))
 ```
 
 ## Implementation

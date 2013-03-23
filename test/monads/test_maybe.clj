@@ -5,8 +5,8 @@
         monads.maybe
         monads.types
         monads.util
-        monads.identity
-        expectations))
+        expectations)
+  (:require [monads.identity :as i]))
 
 (given [m] (do (expect nil (run-monad m mzero))
                (expect 3 (from-just (run-monad m (return 3))))
@@ -22,7 +22,7 @@
                (expect 3 (from-just (run-monad m (mplus (return 3) (return 4)))))
                (expect 3 (from-just (run-monad m (mplus (return 3) mzero)))))
        maybe-m
-       (maybe-t identity-m))
+       (maybe-t i/m))
 
 
 
