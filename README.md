@@ -294,6 +294,19 @@ monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (u/msum (repeat 4000 mzero)))
 nil
 ```
 
+On a less trivial computation:
+
+```clojure
+monads.examples.treenumber> (require '[monads.cont :as c])
+nil
+monads.examples.treenumber> (def x (num-tree (longtree 10000)))
+StackOverflowError   monads.core/fn--1769 (core.clj:63)
+monads.examples.treenumber> (def x (c/run-cont (s/run-state-t (s/t c/m) (number-tree (longtree 10000)) {})))
+#'monads.examples.treenumber/x
+monads.examples.treenumber> (count (second x)) ;; check that we've actually got the right # of entries
+10000
+```
+
 However, this doesn't get around the entire problem: msum is written
 to associate to the right. A left-associative version would still blow
 the stack:
