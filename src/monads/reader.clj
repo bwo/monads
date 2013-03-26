@@ -26,7 +26,7 @@
      :monadplus (when (:monadplus inner)
                   (let [i-zero (-> inner :monadplus :mzero)
                         i-plus (-> inner :monadplus :mplus)]
-                    {:mzero (fn [_] (constantly i-zero))
+                    {:mzero (constantly i-zero)
                      :mplus (curryfn [leftright e]
                               (i-plus (lazy-pair
                                        (run-reader-t (reader-t inner) (first leftright) e)
