@@ -24,7 +24,7 @@
                                    l <- (run-monad (error-t inner) (first lr))
                                    (if (left? l)
                                      (run-monad (error-t inner) (second lr))
-                                     l)))}
+                                     (return l))))}
      :monaderror {:throw-error (comp i-return left)
                   :catch-error (fn [comp handler]
                                  (run-mdo inner
