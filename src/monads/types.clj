@@ -1,5 +1,7 @@
 (ns monads.types)
 
+(set! *warn-on-reflection* true)
+
 (defprotocol MRun
   (mrun [this m]))
 
@@ -30,10 +32,19 @@
   MRun
   (mrun [_ m]  ((:bind m) (mrun comp m) f)))
 
+(defmacro when-instance [cls obj & forms]
+  `(when (instance? ~cls ~obj)
+    (let [~(with-meta obj {:tag cls}) ~obj]
+      ~@forms)))
+
 (deftype Pair [fst snd]
   clojure.lang.Seqable
   (seq [_] (list fst snd))
   Object
+  (equals [this other]
+    (when-instance Pair other
+                   (and (= (.fst this) (.fst other))
+                        (= (.snd this) (.snd other)))))
   (toString [this]
     (with-out-str (print [fst snd]))))
 
@@ -43,6 +54,10 @@
 
 (deftype Either [v type]
   Object
+  (equals [this other]
+    (when-instance Either other
+                   (and (= (.v this) (.v other))
+                        (= (.type this) (.type other)))))
   (toString [this]
     (with-out-str (print [type v]))))
 
@@ -69,6 +84,9 @@
 
 (deftype Just [v]
   Object
+  (equals [this other]
+    (when-instance Just other
+                   (= (.v this) (.v other))))
   (toString [this]
     (with-out-str (print v))))
 
