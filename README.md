@@ -2,13 +2,19 @@
 
 Yet another clojure library for monads.
 
-The primary goals for this library are expressivity and correctness. Things
-should do what they say on the tin, and it should not be a pain to
-construct complex monadic computations or use stacks of multiple
+The primary goals for this library are expressivity and correctness.
+Things should do what they say on the tin, and it should not be a pain
+to construct complex monadic computations or use stacks of multiple
 transformers. Monadic computations should be expressible generically
 as far as is possible. Performance has been a secondary goal, but I
 seem to be getting [good
 results](https://github.com/bwo/monads/wiki/Tree-numbering-benchmark).
+(Regarding correctness it should be noted that the list transformer is
+modelled on the one in the Haskell transformers library and is hence
+[subject to these
+criticism](http://www.haskell.org/haskellwiki/ListT_done_right). Given
+that CLojure is not pervasively lazy, I'm not sure what a good way to
+avoid the over-strictness is.)
 
 The idiom is unabashedly Haskell-derived: the bind function, for
 instance, is spelled `>>=`, and the special syntax, `mdo`, apes
