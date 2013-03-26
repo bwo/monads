@@ -12,9 +12,9 @@ results](https://github.com/bwo/monads/wiki/Tree-numbering-benchmark).
 (Regarding correctness it should be noted that the list transformer is
 modelled on the one in the Haskell transformers library and is hence
 [subject to these
-criticism](http://www.haskell.org/haskellwiki/ListT_done_right). Given
-that CLojure is not pervasively lazy, I'm not sure what a good way to
-avoid the over-strictness is.)
+criticisms](http://www.haskell.org/haskellwiki/ListT_done_right).
+Given that CLojure is not pervasively lazy, I'm not sure what a good
+way to avoid the over-strictness is.)
 
 The idiom is unabashedly Haskell-derived: the bind function, for
 instance, is spelled `>>=`, and the special syntax, `mdo`, apes
