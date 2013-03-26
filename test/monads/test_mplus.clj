@@ -43,11 +43,11 @@
                                        (mplus (return x) (return 3))))))
 
 (expect nil
-        (map seq (run-monad (w/t m/m) (mdo
-                                       (tell ["hi"])
-                                       x <- (mplus (return 5) (return 6))
-                                       (u/guard (> x 5))
-                                       (mplus (return x) (return 3))))))
+        (run-monad (w/t m/m) (mdo
+                              (tell ["hi"])
+                              x <- (mplus (return 5) (return 6))
+                              (u/guard (> x 5))
+                              (mplus (return x) (return 3)))))
 
 (expect [5 6] (r/run-reader-t (r/reader-t l/list-m) (mplus ask (asks inc)) 5))
 
