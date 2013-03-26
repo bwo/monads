@@ -5,6 +5,7 @@
             [monads.maybe :as m]
             [monads.reader :as r]
             [monads.types :as t]
+            [monads.util :as u]
             [monads.writer :as w])
     (:use expectations
           monads.core))
@@ -28,6 +29,25 @@
                t/from-right))
 
 (expect [5 6] (run-monad l/list-m (mplus (return 5) (return 6))))
+
+(expect [[5 ["hi"]] [6 ["hi"]]]
+        (map seq (run-monad (w/t l/m) (mdo
+                                       (tell ["hi"])
+                                       (mplus (return 5) (return 6))))))
+
+(expect [[5 ["hi"]] [3 ["hi"]]]
+        (map seq (run-monad (w/t l/m) (mdo
+                                       (tell ["hi"])
+                                       x <- (mplus (return 5) (return 6))
+                                       (u/guard (< x 6))
+                                       (mplus (return x) (return 3))))))
+
+(expect nil
+        (map seq (run-monad (w/t m/m) (mdo
+                                       (tell ["hi"])
+                                       x <- (mplus (return 5) (return 6))
+                                       (u/guard (> x 5))
+                                       (mplus (return x) (return 3))))))
 
 (expect [5 6] (r/run-reader-t (r/reader-t l/list-m) (mplus ask (asks inc)) 5))
 
