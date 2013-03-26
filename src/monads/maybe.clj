@@ -12,7 +12,7 @@
      :bind (fn [m f] (run-mdo inner
                              v <- m
                              (if (nothing? v)
-                               nothing
+                               (return nothing)
                                (run-monad (maybe-t inner) (f (from-just v))))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
      :monadtrans {:lift (partial lift-m just)}

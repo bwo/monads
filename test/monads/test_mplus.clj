@@ -43,11 +43,11 @@
          [5 12 13]
          [6 8 10]]
         (map t/from-just (take 3 (run-monad (m/maybe-t l/list-m)
-                                            (mdo a <- (map t/just (range 1 200))
-                                                 b <- (map t/just (range (inc a) 200))
+                                            (mdo a <- (lift (range 1 200))
+                                                 b <- (lift (range (inc a) 200))
                                                  let ab = (+ (* a a) (* b b))
-                                                 c <- (map t/just (range 1 200))
-                                                 (u/guard (== (* c c) ab))
+                                                 c <- (lift (range 1 200))
+                                                 (lift (u/guard (== (* c c) ab)))
                                                  (return (list a b c)))))))
 
 (expect [5 6] (run-monad l/list-m (mplus (return 5) (return 6))))
