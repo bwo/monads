@@ -22,7 +22,7 @@
 (defn decl [x y]
   (mdo v <- (run y)
        (modify #(assoc % x v))
-       (lift (w/tell [(str "decl " x)]))
+       (lift (tell [(str "decl " x)]))
        (return v)))
 
 (defn run [op]
