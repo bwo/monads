@@ -53,7 +53,7 @@
   (Returned.
    (fn [m]
      (fn [c]
-       (f #(run-cont (run-c (c %))))))))
+       (run-cont (f #(run-cont (run-c (c %)))))))))
 
 (defn run-cont-t [m comp cont]
   (let [comp ((run-monad m comp) cont)]
