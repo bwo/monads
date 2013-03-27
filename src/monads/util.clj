@@ -35,7 +35,9 @@
           (reverse ms)))
 
 (defn lift-m-2
-  ([f] #(lift-m-2 f %))
+  ([f] (fn
+         ([x] (lift-m-2 f x))
+         ([x y] (lift-m-2 f x y))))
   ([f m] #(lift-m-2 f m %))
   ([f m1 m2]     
      (mdo a <- m1
