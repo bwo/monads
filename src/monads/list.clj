@@ -13,6 +13,7 @@
   :return list
   :bind (fn [m f]
           (mcat (comp (partial run-monad list-m) f)  m))
+  :monadfail {:mfail (fn [_] nil)}
   :monadplus {:mzero ()
               :mplus (fn [leftright]
                        (concat (run-monad list-m (first leftright))
