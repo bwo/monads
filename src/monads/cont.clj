@@ -46,6 +46,8 @@
       (recur (get-cont c) (get-arg c))
       (f c))))
 
+;; after http://okmij.org/ftp/continuations/ContTutorial.hs, loosely.
+
 (defn reset [c]
   (return (run-cont c)))
 
