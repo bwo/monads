@@ -16,17 +16,17 @@
                t/from-right))
 
 (expect 6  (->> (mplus mzero (return 6))
-               (run-monad (e/error-t m/maybe-m))
-               t/from-just
-               t/from-right))
+                (run-monad (e/error-t m/maybe-m))
+                t/from-just
+                t/from-right))
 
 (expect 6  (->> (mplus mzero (return 6))
-               (run-monad e/error-m)
-               t/from-right))
+                (run-monad e/error-m)
+                t/from-right))
 
 (expect 3  (->> (mplus (return 3) mzero)
-               (run-monad e/error-m)
-               t/from-right))
+                (run-monad e/error-m)
+                t/from-right))
 
 (expect [[3 4 5]
          [5 12 13]
