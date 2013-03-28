@@ -15,7 +15,7 @@
                                (return nothing)
                                (run-monad (maybe-t inner) (f (from-just v))))))
      :monadfail {:mfail (fn [_] (i-return nothing))}
-     :monadtrans {:lift (partial lift-m just)}
+     :monadtrans {:lift (fn [m] (run-monad inner (lift-m just m)))}
      :monadplus {:mzero (i-return nothing)
                  :mplus (fn [lr]
                           (run-mdo inner

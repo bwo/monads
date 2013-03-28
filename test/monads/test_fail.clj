@@ -39,3 +39,16 @@
                              (r/run-reader-t (r/t e/m)
                                              (lift (safe-div 2 0))
                                              0)))
+(expect "zero denominator!" (t/from-left
+                             (run-monad (e/t e/m)
+                                        (lift (safe-div 2 0)))))
+
+(expect "zero denominator!" (t/from-right
+                             (t/from-left
+                              (run-monad (e/t e/m)
+                                         (safe-div 2 0)))))
+
+(expect nil (t/from-just (run-monad (m/t m/m)
+                                    (safe-div 2 0))))
+
+(expect nil (run-monad (m/t m/m) (lift (safe-div 2 0))))
