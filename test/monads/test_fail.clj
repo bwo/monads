@@ -43,8 +43,15 @@
                              (run-monad (e/t e/m)
                                         (lift (safe-div 2 0)))))
 
-(expect "zero denominator!" (t/from-right
-                             (t/from-left
+(expect "zero denominator!" (t/from-left
+                             (r/run-reader-t (r/t e/m)
+                                             (s/run-state-t (s/t (r/t e/m))
+                                                            (lift (lift (safe-div 2 0)))
+                                                            3)
+                                             4)))
+
+(expect "zero denominator!" (t/from-left
+                             (t/from-right
                               (run-monad (e/t e/m)
                                          (safe-div 2 0)))))
 
