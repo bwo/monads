@@ -18,7 +18,7 @@
                (run-mdo inner
                         a <- (m e)
                         (run-reader-t (reader-t inner) (f a) e))))
-     :monadtrans {:lift constantly}
+     :monadtrans {:lift (fn [m] (fn [e] (run-monad inner m)))}
      :monadreader {:ask (fn [e] (i-return e))
                    :local (fn [f comp]
                             (fn [e]

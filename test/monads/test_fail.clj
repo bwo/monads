@@ -30,3 +30,12 @@
                              (mdo x <- get-state
                                   (lift (safe-div 2 x)))
                              1))))
+
+(expect "zero denominator!" (t/from-left
+                             (run-monad (w/t e/m)
+                                        (lift (safe-div 2 0)))))
+
+(expect "zero denominator!" (t/from-left
+                             (r/run-reader-t (r/t e/m)
+                                             (lift (safe-div 2 0))
+                                             0)))
