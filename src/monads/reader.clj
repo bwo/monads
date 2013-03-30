@@ -31,9 +31,10 @@
                         i-plus (-> inner :monadplus :mplus)]
                     {:mzero (constantly i-zero)
                      :mplus (curryfn [leftright e]
-                              (i-plus (lazy-pair
-                                       (run-reader-t (reader-t inner) (first leftright) e)
-                                       (run-reader-t (reader-t inner) (second leftright) e))))})))))
+                              (i-plus
+                               (lazy-pair
+                                (run-reader-t (reader-t inner) (first leftright) e)
+                                (run-reader-t (reader-t inner) (second leftright) e))))})))))
 
 (def reader-t (memoize reader-t*))
 
