@@ -346,7 +346,7 @@ monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m)
 ```
 
 Monadic computations are required to ensure the behavioral identity of
-`(>>= (>>= m f) g)` and `(>>= m (fn [x] (>>= (f x) g)))`, the
+`(>>= (>>= m f) g)` and `(>>= m (fn [x] (>>= (f x) g)))`, so the
 `reorganize` function can convert left-biased computations with the
 former shape to right-biased computations with the latter. (With a
 small amount of work we could implement something similar for `mplus`,
