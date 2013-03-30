@@ -4,10 +4,10 @@
             [the.parsatron :as parsatron]
             [macroparser.bindings :as bindings]
             [macroparser.monads :as parser])
+  (:use [monads.types :only [if-instance]])
   (:import [monads.types Return Returned Bind Pair]))
 
 (set! *warn-on-reflection* true)
-
 
 (defn return [x]
   (Return. x))
@@ -100,3 +100,29 @@
 (defn asks [f]
   (mdo x <- ask
        (return (f x))))
+
+;;;;
+
+(defn reorganize
+  "Reorganize the monadic computation m so that binds nested on the
+   left are moved to the right, i.e. transform expressions like
+
+   (>>= (>>= (>>= m f) g) h)
+
+   into expressions like
+
+   (>>= m (fn [x] (>>= (f x) (fn [y] (>>= (g y) h))))).
+
+   A monad implementation for which these two expressions give
+   different results is broken."
+  [m]
+  (println m)
+  (if-instance Bind m
+    (let [comp (.comp m)]
+      (if-instance Bind comp
+        (let [inner-comp (.comp comp)
+              inner-f (.f comp)
+              f (.f m)]
+          (recur (Bind. inner-comp (fn [x] (Bind. (inner-f x) f)))))
+        m))
+    m))

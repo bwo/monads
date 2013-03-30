@@ -32,6 +32,12 @@
   MRun
   (mrun [_ m] ((:bind m) (mrun comp m) f)))
 
+(defmacro if-instance [cls obj then else]
+  `(if (instance? ~cls ~obj)
+     (let [~(with-meta obj {:tag cls}) ~obj]
+       ~then)
+     ~else))
+
 (defmacro when-instance [cls obj & forms]
   `(when (instance? ~cls ~obj)
     (let [~(with-meta obj {:tag cls}) ~obj]
