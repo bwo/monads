@@ -327,7 +327,10 @@ nil
 The same thing happens with nested binds on the left:
 
 ```clojure
-monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m) (reduce (fn [acc _] (>>= acc (fn [x] (return (inc x))))) (return 0) (range 10000))))
+monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m)
+                (reduce (fn [acc _] (>>= acc (fn [x] (return (inc x))))) 
+                        (return 0)
+                        (range 10000))))
 StackOverflowError   monads.types.Bind (types.clj:33)
 ```
 
@@ -335,7 +338,10 @@ However, since we have a programmatically manipulable representation
 of the computation, this difficulty can be worked around:
 
 ```clojure
-monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m) (reorganize (reduce (fn [acc _] (>>= acc (fn [x] (return (inc x))))) (return 0) (range 10000)))))
+monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m) 
+                (reorganize (reduce (fn [acc _] (>>= acc (fn [x] (return (inc x))))) 
+                                    (return 0) 
+                                    (range 10000)))))
 #<Just 10000>
 ```
 
