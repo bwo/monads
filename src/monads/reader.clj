@@ -21,7 +21,7 @@
      :monadfail (when (:monadfail inner)
                   {:mfail (curryfn [str _]
                             ((-> inner :monadfail :mfail) str))})
-     :monadtrans {:lift (fn [m] (fn [e] (run-monad inner m)))}
+     :monadtrans {:lift (curryfn [m e] (run-monad inner m))}
      :monadreader {:ask (fn [e] (i-return e))
                    :local (fn [f comp]
                             (fn [e]
