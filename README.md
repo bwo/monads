@@ -353,7 +353,10 @@ small amount of work we could implement something similar for `mplus`,
 which to the best of my knowledge is also required to be associative.
 However, a [remark](http://okmij.org/ftp/continuations/Searches.hs) by
 Oleg Kiselyov suggesting that associativity *isn't* always required
-has led me to hold off on that for now.)
+has led me to hold off on that for now.) It would also be possible to
+bake this behavior into the definition of `>>=`, but it is convenient
+to be able to test that the required associative property actually
+holds.
 
 There is a [branch](https://github.com/bwo/monads/tree/tramp) that
 attempts to avoid the necessity of using a transformer essentially by
