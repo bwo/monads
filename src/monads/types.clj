@@ -30,7 +30,7 @@
   (toString [this]
     (with-out-str (print [comp f])))
   MRun
-  (mrun [_ m]  ((:bind m) (mrun comp m) f)))
+  (mrun [_ m] ((:bind m) (mrun comp m) f)))
 
 (defmacro when-instance [cls obj & forms]
   `(when (instance? ~cls ~obj)
