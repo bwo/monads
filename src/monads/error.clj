@@ -1,7 +1,6 @@
 (ns monads.error
   (:require [monads.core :refer :all])
-  (:use [monads.util :only [if-inner-return]]
-        [monads.types :only [from-right from-left right left left? either]])
+  (:use [monads.types :only [from-right from-left right left left? either]])
   (:import [monads.types Returned Either]))
 
 

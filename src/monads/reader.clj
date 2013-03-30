@@ -1,6 +1,6 @@
 (ns monads.reader
   (:require [monads.core :refer :all])
-  (:use [monads.util :only [curryfn lazy-pair if-inner-return]])
+  (:use [monads.util :only [curryfn lazy-pair]])
   (:import [monads.types Returned]))
 
 (defn run-reader-t [m comp e]

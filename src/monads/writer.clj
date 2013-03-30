@@ -2,7 +2,7 @@
   (:require [monads.core :refer :all]
             [babbage.monoid :as m])
   (:use [monads.types :only [fst snd]]
-        [monads.util :only [if-inner-return lazy-pair]]
+        [monads.util :only [lazy-pair]]
         [babbage.monoid :only [<>]])
   (:import [monads.types Returned Pair]))
 

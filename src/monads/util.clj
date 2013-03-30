@@ -73,8 +73,3 @@
 
 (defmacro lazy-pair [a b]
   `(lazy-seq (cons ~a (lazy-seq (cons ~b '())))))
-
-(defmacro if-inner-return [m ifb elseb]
-  `(if-let [~'i-return (-> ~m :inner :return)]
-     ~ifb
-     ~elseb))
