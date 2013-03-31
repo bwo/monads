@@ -320,7 +320,7 @@ the stack:
 ```clojure
 monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce mplus mzero (repeat 4000 mzero))))
 ; Evaluation aborted.
-monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce #(mplus %2 %1) mzero (reverse (repeat 4000 mzero)))))
+monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce #(mplus %2 %1) mzero (repeat 4000 mzero))))
 nil
 ```
 
