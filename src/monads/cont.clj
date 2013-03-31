@@ -137,8 +137,8 @@
    reorganization does not recurse into the monadic-computation
    arguments of e.g. listen, local, or pass."
   [m]
-  ;; this reorg-plus is here in case we fall through reorg-binds
-  ;; right away. We can't call reorg-plus in reorg-binds in the places
-  ;; we currently just (return ...), because it can lead to, yes,
-  ;; stack overflows.
+  ;; this reorg-plus is here in case we fall through reorg-binds right
+  ;; away. We can't call reorg-plus in reorg-binds in the else branch
+  ;; of the first if-instance, because it can lead to, yes, stack
+  ;; overflows.
   (run-cont (reorg-plus (run-cont (reorg-binds m)))))
