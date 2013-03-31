@@ -21,36 +21,11 @@
                    c/run-cont
                    t/from-just))
 
-(expect 1000
-        (t/from-just
-         (c/run-cont
-          (run-monad (m/t c/m)
-                     (reduce (fn [acc _] (>>= (c/reorganize (mplus mzero acc)) (comp return inc)))
-                             (mplus (reduce mplus mzero (repeat 2000 mzero)) (return 0))
-                             (range 1000))))))
-
-(expect 1000
-        (t/from-just
-         (c/run-cont
-          (run-monad (m/t c/m)
-                     (reduce (fn [acc _] (c/reorganize (>>= (mplus mzero acc) (comp return inc))))
-                             (mplus (reduce mplus mzero (repeat 2000 mzero)) (return 0))
-                             (range 1000))))))
-
-(expect 4000
-        (t/from-just
-         (c/run-cont
-          (run-monad (m/t c/m)
-                     (c/reorganize
-                      (reduce (fn [acc _] (c/reorganize (>>= (mplus mzero acc) (comp return inc))))
-                              (mplus (reduce mplus mzero (repeat 2000 mzero)) (return 0))
-                              (range 4000)))))))
-
-(expect 4000
+(expect 40000
         (t/from-just
          (c/run-cont
           (run-monad (m/t c/m)
                      (-> (reduce (fn [acc _] (>>= (mplus mzero acc) (comp return inc)))
-                                 (mplus (reduce mplus mzero (repeat 4000 mzero)) (return 0))
-                                 (range 4000))
+                                 (mplus (reduce mplus mzero (repeat 40000 mzero)) (return 0))
+                                 (range 40000))
                          c/reorganize)))))
