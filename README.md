@@ -181,6 +181,9 @@ It does what you would expect:
               (return z)))
 > (run-state m {:x 1 :y 3})
 #<Pair [10 {:z 10, :y 3, :x 1}]>
+> (run-state-t (state-t monads.maybe/maybe-m) m {:x 1 :y 3})
+#<Just #<Pair [10 {:z 10, :y 3, :x 1}]>>
+
 ```
 
 And expands into uses of `>>=` and anonymous functions:
