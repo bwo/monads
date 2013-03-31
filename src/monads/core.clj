@@ -49,7 +49,7 @@
 ;;; monadplus
 (def mzero (Returned. (fn [m] (-> m :monadplus :mzero))))
 (defn mplus [left right]
-  (Mplus. [left right]))
+  (Mplus. left right))
 
 ;; monadfail
 (defn mfail [msg]
@@ -122,7 +122,15 @@
 
    Becomes
 
-   (mplus a (mplus b (mplus c d)))."
+   (mplus a (mplus b (mplus c d))).
+
+   Note that this is not currently smart enough to rewrite
+
+  (>>= (>>= (mplus (mplus a b) c) f) g)
+
+  into
+
+  (>>= (mplus a (mplus b c)) (fn [x] (>>= (f x) g)))"
   [m]
   (if-instance Bind m
     (let [comp (.comp m)]
@@ -133,10 +141,9 @@
           (recur (Bind. inner-comp (fn [x] (Bind. (inner-f x) f)))))
         m))
     (if-instance Mplus m
-      (let [lr (.lr m)
-            l (first lr)]
+      (let [l (.l m)]
         (if-instance Mplus l
-          (let [l-lr (.lr l)]
-            (recur (Mplus. [(first l-lr) (Mplus. [(second l-lr) (second lr)])])))
+          (let [l-l (.l l)]
+            (recur (Mplus. l-l (Mplus. (.r l) (.r m)))))
           m))
       m)))

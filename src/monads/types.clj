@@ -18,12 +18,12 @@
   MRun
   (mrun [_ m] ((:return m) v)))
 
-(deftype Mplus [lr]
+(deftype Mplus [l r]
   Object
   (toString [this]
-    (with-out-str (print lr)))
+    (with-out-str (print l r)))
   MRun
-  (mrun [_ m] ((-> m :monadplus :mplus) lr)))
+  (mrun [_ m] ((-> m :monadplus :mplus) [l r])))
 
 (deftype Returned [v]
   Object
