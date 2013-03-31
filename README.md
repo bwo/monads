@@ -320,7 +320,6 @@ the stack:
 ```clojure
 monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce mplus mzero (repeat 4000 mzero))))
 ; Evaluation aborted.
-monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce #(mplus %2 %1) mzero (repeat 4000 mzero))))
 nil
 ```
 
@@ -343,20 +342,22 @@ monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m)
                                     (return 0) 
                                     (range 10000)))))
 #<Just 10000>
+monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m)
+                                               (reorganize (reduce #(mplus %1 %2)
+                                                                   mzero
+                                                                   (repeat 10000 mzero)))))
+nil
 ```
 
 Monadic computations are required to ensure the behavioral identity of
 `(>>= (>>= m f) g)` and `(>>= m (fn [x] (>>= (f x) g)))`, so the
 `reorganize` function can convert left-biased computations with the
-former shape to right-biased computations with the latter. (With a
-small amount of work we could implement something similar for `mplus`,
-which to the best of my knowledge is also required to be associative.
-However, a [remark](http://okmij.org/ftp/continuations/Searches.hs) by
-Oleg Kiselyov suggesting that associativity *isn't* always required
-has led me to hold off on that for now.) It would also be possible to
-bake this behavior into the definition of `>>=`, but it is convenient
-to be able to test that the required associative property actually
-holds.
+former shape to right-biased computations with the latter. It would
+also be possible to bake this behavior into the definition of `>>=`,
+but it is convenient to be able to test that the required associative
+property actually holds. Since `mplus` is similarly required to be
+associative, it does the same for left-biased `mplus` applications,
+rewriting `(mplus (mplus a b) c)` to `(mplus a (mplus b c))`.
 
 There is a [branch](https://github.com/bwo/monads/tree/tramp) that
 attempts to avoid the necessity of using a transformer essentially by

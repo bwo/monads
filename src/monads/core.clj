@@ -5,7 +5,7 @@
             [macroparser.bindings :as bindings]
             [macroparser.monads :as parser])
   (:use [monads.types :only [if-instance]])
-  (:import [monads.types Return Returned Bind Pair]))
+  (:import [monads.types Return Returned Bind Pair Mplus]))
 
 (set! *warn-on-reflection* true)
 
@@ -49,7 +49,7 @@
 ;;; monadplus
 (def mzero (Returned. (fn [m] (-> m :monadplus :mzero))))
 (defn mplus [left right]
-  (Returned. (fn [m] ((-> m :monadplus :mplus) [left right]))))
+  (Mplus. [left right]))
 
 ;; monadfail
 (defn mfail [msg]
@@ -114,7 +114,15 @@
    (>>= m (fn [x] (>>= (f x) (fn [y] (>>= (g y) h))))).
 
    A monad implementation for which these two expressions give
-   different results is broken."
+   different results is broken.
+
+   Similarly reorganizes mplus operations nested on the left:
+
+   (mplus (mplus (mplus a b) c) d)
+
+   Becomes
+
+   (mplus a (mplus b (mplus c d)))."
   [m]
   (if-instance Bind m
     (let [comp (.comp m)]
@@ -124,4 +132,11 @@
               f (.f m)]
           (recur (Bind. inner-comp (fn [x] (Bind. (inner-f x) f)))))
         m))
-    m))
+    (if-instance Mplus m
+      (let [lr (.lr m)
+            l (first lr)]
+        (if-instance Mplus l
+          (let [l-lr (.lr l)]
+            (recur (Mplus. [(first l-lr) (Mplus. [(second l-lr) (second lr)])])))
+          m))
+      m)))
