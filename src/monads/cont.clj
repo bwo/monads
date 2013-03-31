@@ -75,6 +75,7 @@
           r (.r m)]
       (mdo li <- (reorg-binds l)
            ri <- (reorg-binds r)
+           ri <- (reorg-plus ri)
            (if-instance Mplus li
              (let [l-l (.l li)]
                (reorg-plus (Mplus. l-l (Mplus. (.r li) ri))))
