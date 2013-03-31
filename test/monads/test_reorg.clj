@@ -1,4 +1,4 @@
-(ns monads.test-cont
+(ns monads.test-reorg
   (:require [monads.maybe :as m]
             [monads.cont :as c]
             [monads.types :as t]
