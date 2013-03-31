@@ -320,7 +320,6 @@ the stack:
 ```clojure
 monads.maybe> (c/run-cont (run-monad (maybe-t c/m) (reduce mplus mzero (repeat 4000 mzero))))
 ; Evaluation aborted.
-nil
 ```
 
 The same thing happens with nested binds on the left:
