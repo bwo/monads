@@ -63,3 +63,10 @@
 
 (def t state-t)
 (def m state-m)
+
+(defn lift-catch [m h]
+  (Returned.
+   (curryfn [t s]
+     (run-monad (:inner t)
+                (catch-error (run-state-t t m s)
+                             (fn [e] (run-state-t t (h m) s)))))))
