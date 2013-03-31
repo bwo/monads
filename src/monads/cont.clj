@@ -75,10 +75,16 @@
           r (.r m)]
       (mdo li <- (reorg-binds l)
            ri <- (reorg-binds r)
-           ri <- (reorg-plus ri)
+           ri <- (if-instance Mplus ri
+                   (let [lr (.l ri)]
+                     (if-instance Mplus lr
+                       (reorg-plus ri)
+                       (return ri)))
+                   (return ri))
            (if-instance Mplus li
              (let [l-l (.l li)]
-               (reorg-plus (Mplus. l-l (Mplus. (.r li) ri))))
+               (mdo ri <- (reorg-plus ri)
+                    (reorg-plus (Mplus. l-l (Mplus. (.r li) ri)))))
              (return (Mplus. li ri)))))
     (return m)))
 
@@ -91,7 +97,8 @@
               f (.f m)]
           (mdo i <- (reorg-plus i-comp)
                (reorg-binds (Bind. i (fn [x] (Bind. (i-f x) f))))))
-        (return m)))
+        (mdo comp <- (reorg-plus comp)
+             (return (Bind. comp (.f m))))))
     (return m)))
 
 (defn reorganize
