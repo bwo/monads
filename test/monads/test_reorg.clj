@@ -36,3 +36,12 @@
                      (reduce (fn [acc _] (c/reorganize (>>= (mplus mzero acc) (comp return inc))))
                              (mplus (reduce mplus mzero (repeat 2000 mzero)) (return 0))
                              (range 1000))))))
+
+(expect 4000
+        (t/from-just
+         (c/run-cont
+          (run-monad (m/t c/m)
+                     (c/reorganize
+                      (reduce (fn [acc _] (c/reorganize (>>= (mplus mzero acc) (comp return inc))))
+                              (mplus (reduce mplus mzero (repeat 2000 mzero)) (return 0))
+                              (range 4000)))))))
