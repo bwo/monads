@@ -55,3 +55,8 @@
 
 (def t reader-t)
 (def m reader-m)
+
+(defn lift-catch [m h]
+  (Returned. (curryfn [t e]
+               (run-monad (:inner t) (catch-error (run-reader-t t m e)
+                                                  (fn [err] (run-reader-t t (h err) e)))))))

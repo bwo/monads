@@ -78,3 +78,10 @@
 
 (def t writer-t)
 (def m writer-m)
+
+(defn lift-catch [m h]
+  (Returned.
+   (fn [t]
+     (run-monad (:inner t)
+                (catch-error (run-monad t m)
+                             (fn [err] (run-monad t (h err))))))))
