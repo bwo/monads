@@ -1,5 +1,6 @@
 (ns monads.test-error
   (:require [monads.error :as e]
+            [monads.maybe :as m]
             [monads.reader :as r]
             [monads.state :as s]
             [monads.types :as t]
@@ -55,8 +56,31 @@
               (mdo x <- get-state
                    (u/mwhen (== x 0)
                             (lift (throw-error "x is zero")))
+                   (put-state 4)
                    (return (/ 4 x)))
               (constantly (return -1)))
              (#(s/run-state-t (s/t e/m) % 0))
              t/from-right
              seq))
+
+
+(expect -1
+        (->> (m/lift-catch
+              (mdo x <- (return 0)
+                   (u/mwhen (== x 0)
+                            (lift (throw-error "x is zero")))
+                   mzero)
+              (constantly (return -1)))
+             (run-monad (m/t e/m))
+             t/from-right
+             t/from-just))
+
+(expect t/nothing?
+        (->> (m/lift-catch
+              (mdo x <- (return 1)
+                   (u/mwhen (== x 0)
+                            (lift (throw-error "x is zero")))
+                   mzero)
+              (constantly (return -1)))
+             (run-monad (m/t e/m))
+             t/from-right))

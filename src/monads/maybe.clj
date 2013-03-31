@@ -1,5 +1,6 @@
 (ns monads.maybe
   (:require [monads.core :refer :all])
+  (:import [monads.types Returned])
   (:use [monads.types :only [from-just nothing? just nothing maybe]]
         [monads.util :only [lift-m]]))
 
@@ -8,6 +9,7 @@
 (defn- maybe-t* [inner]
   (let [i-return (:return inner)]
     (monad
+     :inner inner
      :return (fn [x] (i-return (just x)))
      :bind (fn [m f] (run-mdo inner
                              v <- m
@@ -39,3 +41,10 @@
 
 (def m maybe-m)
 (def t maybe-t)
+
+(defn lift-catch [m h]
+  (Returned.
+   (fn [t]
+     (run-monad (:inner t)
+                (catch-error (run-monad t m)
+                             (fn [e] (run-monad t (h e))))))))
