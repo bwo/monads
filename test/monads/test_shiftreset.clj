@@ -23,4 +23,4 @@
         (c/run-cont (m- (c/reset
                          (m+ (return 3) (return 3))) (return 1))))
 
-;;; note that lift-m* does not work!
+;;; note that lift-m* does not work! (or, more precisely, sequence-m doesn't).

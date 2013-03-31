@@ -39,7 +39,7 @@
          ([x] (lift-m-2 f x))
          ([x y] (lift-m-2 f x y))))
   ([f m] #(lift-m-2 f m %))
-  ([f m1 m2]     
+  ([f m1 m2]
      (mdo a <- m1
           b <- m2
           (return (f a b)))))

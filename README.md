@@ -99,10 +99,10 @@ A (not very systematic) selection of monad functions is provided in
     immediately with two.
 - `(lift-m-2 f [m [m2]])`: as `lift-m` but for binary functions.
 - `(lift-m* f [& args])`: as `lift-m` but for arbitrary arities. (N.B.
-  this is implemented using sequence-m and appears to behave
-  unexpectedly in the context of the continuation monad's `shift` and
-  `reset`, but those should probably be considered experimental for
-  the time being).
+   this is implemented using sequence-m and each appears to behave
+   unexpectedly in the context of the continuation monad's `shift` and
+   `reset`, but those should probably be considered experimental for
+   the time being).
 - `ap`: lifts function application, but only for curried functions:
 
    ```clojure
