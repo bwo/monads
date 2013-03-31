@@ -116,7 +116,6 @@
    A monad implementation for which these two expressions give
    different results is broken."
   [m]
-  (println m)
   (if-instance Bind m
     (let [comp (.comp m)]
       (if-instance Bind comp
