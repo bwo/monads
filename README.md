@@ -351,16 +351,17 @@ nil
 Monadic computations are required to ensure the behavioral identity of
 `(>>= (>>= m f) g)` and `(>>= m (fn [x] (>>= (f x) g)))`, so the
 `reorganize` function can convert left-biased computations with the
-former shape to right-biased computations with the latter. It would
-also be possible to bake this behavior into the definition of `>>=`,
-but it is convenient to be able to test that the required associative
-property actually holds. Since `mplus` is similarly required to be
-associative, it does the same for left-biased `mplus` applications,
-rewriting `(mplus (mplus a b) c)` to `(mplus a (mplus b c))`.
+former shape to right-biased computations with the latter. Since
+`mplus` is similarly required to be associative, it does the same for
+left-biased `mplus` applications, rewriting `(mplus (mplus a b) c)` to
+`(mplus a (mplus b c))`.
 
 Note that this reorganization at present doesn't descend into the
 monadic arguments of e.g. `local`, and (obviously) the contents of
-closures in the second argument of `>>=` are opaque to it.
+closures in the second argument of `>>=` are opaque to it. If the
+rewriting were baked into `mplus` and `>>=`, this would not be an
+issue, but I'm hesitant to carry the rewriting out if it's not asked
+for.
 
 There is a [branch](https://github.com/bwo/monads/tree/tramp) that
 attempts to avoid the necessity of using a transformer and this sort
