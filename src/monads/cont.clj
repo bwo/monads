@@ -120,7 +120,7 @@
 
    Becomes
 
-   (mplus a (mplus b (mplus c d)))
+   (mplus a (mplus b (mplus c d))).
 
    And, similarly, an mplus operation which is not associative is
    considered to be in error.
