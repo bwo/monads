@@ -1,7 +1,8 @@
 (ns monads.cont
-  (:require [monads.core :refer :all])
-  (:use [monads.util :only [curryfn]])
-  (:import [monads.types Returned]))
+  (:require [monads.core :refer :all :exclude [reorganize]])
+  (:use [monads.util :only [curryfn]]
+        [monads.types :only [if-instance]])
+  (:import [monads.types Returned Mplus Bind]))
 
 ;; this type shouldn't be exposed
 (deftype Cont [c v]
@@ -65,3 +66,64 @@
 
 (def t cont-t)
 (def m cont-m)
+
+(declare reorg-binds)
+
+(defn- reorg-plus [m]
+  (if-instance Mplus m
+    (let [l (.l m)
+          r (.r m)]
+      (mdo li <- (reorg-binds l)
+           ri <- (reorg-binds r)
+           (if-instance Mplus li
+             (let [l-l (.l li)]
+               (reorg-plus (Mplus. l-l (Mplus. (.r li) ri))))
+             (return (Mplus. li ri)))))
+    (return m)))
+
+(defn- reorg-binds [m]
+  (if-instance Bind m
+    (let [comp (.comp m)]
+      (if-instance Bind comp
+        (let [i-comp (.comp comp)
+              i-f (.f comp)
+              f (.f m)]
+          (mdo i <- (reorg-plus i-comp)
+               (reorg-binds (Bind. i (fn [x] (Bind. (i-f x) f))))))
+        (return m)))
+    (return m)))
+
+(defn reorganize
+  "Reorganize the monadic computation m so that binds nested on the
+   left are moved to the right, i.e. transform expressions like
+
+   (>>= (>>= (>>= m f) g) h)
+
+   into expressions like
+
+   (>>= m (fn [x] (>>= (f x) (fn [y] (>>= (g y) h))))).
+
+   A monad implementation for which these two expressions give
+   different results is broken.
+
+   Similarly reorganizes mplus operations nested on the left:
+
+   (mplus (mplus (mplus a b) c) d)
+
+   Becomes
+
+   (mplus a (mplus b (mplus c d))).
+
+   Both transformations are interleaved:
+
+   (mplus (mplus (>>= (>>= (mplus (mplus a b) c) f) g) d) e)
+
+   becomes
+
+   (mplus (>>= (mplus a (mplus b c)) (fn [x] (>>= (f x) g))) (mplus d e)).
+
+   Note that *only* mplus and bind operations are investigated: the
+   reorganization does not recurse into the monadic-computation
+   arguments of e.g. listen, local, or pass."
+  [m]
+  (run-cont (reorg-plus (run-cont (reorg-binds m)))))

@@ -337,14 +337,14 @@ of the computation, this difficulty can be worked around:
 
 ```clojure
 monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m) 
-                (reorganize (reduce (fn [acc _] (>>= acc (fn [x] (return (inc x))))) 
-                                    (return 0) 
-                                    (range 10000)))))
+                (monads.cont/reorganize (reduce (fn [acc _] (>>= acc (fn [x] (return (inc x))))) 
+                                                (return 0) 
+                                                (range 10000)))))
 #<Just 10000>
 monads.maybe> (monads.cont/run-cont (run-monad (t monads.cont/m)
-                                               (reorganize (reduce #(mplus %1 %2)
-                                                                   mzero
-                                                                   (repeat 10000 mzero)))))
+                (monads.cont/reorganize (reduce #(mplus %1 %2)
+                                                mzero
+                                                (repeat 10000 mzero)))))
 nil
 ```
 
@@ -358,19 +358,23 @@ property actually holds. Since `mplus` is similarly required to be
 associative, it does the same for left-biased `mplus` applications,
 rewriting `(mplus (mplus a b) c)` to `(mplus a (mplus b c))`.
 
+Note that this reorganization at present doesn't descend into the
+monadic arguments of e.g. `local`, and (obviously) the contents of
+closures in the second argument of `>>=` are opaque to it.
+
 There is a [branch](https://github.com/bwo/monads/tree/tramp) that
-attempts to avoid the necessity of using a transformer essentially by
-translating every monad's implementation into CPS in a trampolining
-continuation monad; however, this approach has several disadvantages:
-in particular, it slows everything down and makes the code more
-complicated---especially the code for the list monad, which has a
-natural transformation which is not lazy, a more complicated
-translation which is kind of lazy but can't be properly lifted into a
-monad tranformer, and a slightly more complicated yet translation
-which can be lifted but is even less lazy. (However, if anyone wants
-to show me how to, or contribute code to, make the list monad lazy,
-play nice with transformers, and be trampolined, I would be most
-appreciative.)
+attempts to avoid the necessity of using a transformer and this sort
+of manual rewriting by, essentially, translating every monad's
+implementation into CPS in a trampolining continuation monad; however,
+this approach has several disadvantages: in particular, it slows
+everything down and makes the code more complicated---especially the
+code for the list monad, which has a natural transformation which is
+not lazy, a more complicated translation which is kind of lazy but
+can't be properly lifted into a monad tranformer, and a slightly more
+complicated yet translation which can be lifted but is even less lazy.
+(However, if anyone wants to show me how to, or contribute code to,
+make the list monad lazy, play nice with transformers, and be
+trampolined, I would be most appreciative.)
 
 ## Why another monad implementation?
 
