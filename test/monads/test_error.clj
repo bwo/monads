@@ -84,3 +84,9 @@
               (constantly (return -1)))
              (run-monad (m/t e/m))
              t/from-right))
+
+(expect ["3" nil]
+        (->> (run-monad (w/t (m/t e/m)) (lift (m/lift-catch (lift (throw-error "3")) return)))
+             t/from-right
+             t/from-just
+             seq))
