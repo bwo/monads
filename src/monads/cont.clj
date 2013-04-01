@@ -10,14 +10,6 @@
   (toString [this]
     (with-out-str (print [c v]))))
 
-(defn get-cont [^Cont c]
-  (.c c))
-(defn get-arg [^Cont c]
-  (.v c))
-
-(defn- cont? [o]
-  (instance? Cont o))
-
 (defmonad cont-m
   :return (curryfn [r c] (Cont. c r))
   :bind (fn [m f]
@@ -37,14 +29,14 @@
 (defn run-cont [m]
   (loop [m m c identity]
     (let [m ((run-monad cont-m m) c)]
-      (if (cont? m)
-        (recur (get-cont m) (get-arg m))
+      (if-instance Cont m
+        (recur (.c m) (.v m))
         m))))
 
 (defn run-c [c]
   (loop [c c f identity]
-    (if (cont? c)
-      (recur (get-cont c) (get-arg c))
+    (if-instance Cont c
+      (recur (.c c) (.v c))
       (f c))))
 
 ;; after http://okmij.org/ftp/continuations/ContTutorial.hs, loosely.
@@ -60,8 +52,8 @@
 
 (defn run-cont-t [m comp cont]
   (let [comp ((run-monad m comp) cont)]
-    (if (cont? comp)
-      (recur m (get-cont comp) (get-arg comp))
+    (if-instance Cont comp
+      (recur m (.c comp) (.v comp))
       comp)))
 
 (def t cont-t)
