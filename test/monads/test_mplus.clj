@@ -91,3 +91,9 @@
                                          6) 3))
 
 (expect 6 (t/from-just (r/run-reader-t (r/reader-t m/maybe-m) (mplus mzero (asks inc)) 5)))
+
+(expect [5]
+        (map t/from-just (run-monad (m/t l/m) (mplus (return 5) (return 3)))))
+
+(expect [5 3]
+        (map t/from-just (run-monad (m/t l/m) (lift (mplus (return 5) (return 3))))))
