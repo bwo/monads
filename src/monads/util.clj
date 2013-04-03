@@ -36,9 +36,9 @@
 
 (defmacro deflift-m-n [n]
   (let [nm (symbol (str "lift-m-" n))
-        arglists (mapv (comp vec #(cons 'f (for [n (range %)]
-                                             (symbol (str "m" (inc n))))))
-                       (range (inc n)))]
+        arglists (map (comp vec #(cons 'f (for [n (range %)]
+                                            (symbol (str "m" (inc n))))))
+                      (range (inc n)))]
     `(defn ~nm
        {:arglists ~(list 'quote arglists)}
        ~@(for [passed-args (range n)]
