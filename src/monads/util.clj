@@ -35,8 +35,12 @@
           (reverse ms)))
 
 (defmacro deflift-m-n [n]
-  (let [nm (symbol (str "lift-m-" n))]
+  (let [nm (symbol (str "lift-m-" n))
+        arglists (mapv (comp vec #(cons 'f (for [n (range %)]
+                                             (symbol (str "m" (inc n))))))
+                       (range (inc n)))]
     `(defn ~nm
+       {:arglists ~(list 'quote arglists)}
        ~@(for [passed-args (range n)]
            (let [f (gensym "f_")
                  argsyms (repeatedly passed-args #(gensym "now_"))]
@@ -45,7 +49,7 @@
                    ~@(for [next-args (range 1 (- (inc n) passed-args))]
                        (let [next-arg-syms (repeatedly next-args #(gensym "later_"))]
                          `([~@next-arg-syms] (~nm ~f ~@argsyms ~@next-arg-syms))))))))
-       ~(let [f (gensym)
+       ~(let [f (gensym "f_")
               m-args (repeatedly n #(gensym "m_"))
               args (repeatedly n gensym)
               mdo (concat '[mdo]
