@@ -98,6 +98,15 @@ A (not very systematic) selection of monad functions is provided in
     monadic, returning the monadic function with one arg or applying it
     immediately with two.
 - `(lift-m-2 f [m [m2]])`: as `lift-m` but for binary functions.
+   
+    There are also `lift-m-3` through `lift-m-8`. All the `lift-m-n`
+    functions are fully curried and can take at any stage anywhere
+    from one to the remaining number of arguments, e.g. `((lift-m-3 +
+    a b) c)`, `(((lift-m-3 +) a) b c)`, etc. In the unlikely event
+    that a lifting function of yet greater arity is needed, the
+    `deflift-m-n` macro can be used to create one. `deflift-m-ns` can
+    be used to create a range of such functions.
+
 - `(lift-m* f [& args])`: as `lift-m` but for arbitrary arities. (N.B.
    this is implemented using sequence-m and each appears to behave
    unexpectedly in the context of the continuation monad's `shift` and

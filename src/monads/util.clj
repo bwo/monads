@@ -34,6 +34,31 @@
           (return ())
           (reverse ms)))
 
+(defmacro deflift-m-n [n]
+  (let [nm (symbol (str "lift-m-" n))]
+    `(defn ~nm
+       ~@(for [passed-args (range n)]
+           (let [f (gensym "f_")
+                 argsyms (repeatedly passed-args #(gensym "now_"))]
+             `([~f ~@argsyms]
+                 (fn
+                   ~@(for [next-args (range 1 (- (inc n) passed-args))]
+                       (let [next-arg-syms (repeatedly next-args #(gensym "later_"))]
+                         `([~@next-arg-syms] (~nm ~f ~@argsyms ~@next-arg-syms))))))))
+       ~(let [f (gensym)
+              m-args (repeatedly n #(gensym "m_"))
+              args (repeatedly n gensym)
+              mdo (concat '[mdo]
+                          (mapcat #(list %1 '<- %2) args m-args)
+                          (list (list 'return (list* f args))))]
+          `([~f ~@m-args]
+              ~mdo)))))
+
+(defmacro deflift-m-ns [lo hi]
+  (when-not (== lo hi)
+    `(do (deflift-m-n ~lo)
+         (deflift-m-ns ~(inc lo) ~hi))))
+
 (defn lift-m-2
   ([f] (fn
          ([x] (lift-m-2 f x))
@@ -43,6 +68,8 @@
      (mdo a <- m1
           b <- m2
           (return (f a b)))))
+
+(deflift-m-ns 3 9)
 
 (def ap (lift-m-2 (fn [a b] (a b))))
 
