@@ -79,9 +79,10 @@ Additional operations are supported only by some monads:
 - `tell`, `pass`, `listen`, `listens`, `censor`: supported by
    `writer`.
 
-All of these except `callcc` are implemented in a monad-agnostic way:
-it is possible to define additional monads that implement any of them
-without changing the existing code.
+All of these except `callcc` are implemented in a monad-agnostic way
+(and thus are defined in `monads.core`): it is possible to define
+additional monads that implement any of them without changing the
+existing code.
 
 ## Utility functions
 
