@@ -13,6 +13,10 @@
                                                       (return 1)))
                                         (return y)))))
 
+(expect [[1 ()] ["3"]]
+        (seq (run-monad w/writer-m
+                        (listens rest (>> (tell ["3"]) (return 1))))))
+
 (expect [[1 [2]] [3 2]]
         (seq (t/from-right (run-monad (w/t e/m) (mdo x <- (return 3)
                                                       (tell [3])
