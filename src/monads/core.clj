@@ -81,7 +81,7 @@
 
 ;;monadwriter
 (defn tell
-  "Add the value w to the log."
+  "Add the value w to the log. Note that w must be a monoid."
   [w]
   (Returned. (fn [m] ((-> m :monadwriter :tell) w))))
 
