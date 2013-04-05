@@ -76,7 +76,8 @@ namespace) a `lift-catch` function which lifts the error monad's
 `catch-error`. E.g.:
 
 ```clojure
-monads.reader> (run-reader-t (t monads.error/m) (mdo x <- ask
+monads.reader> (run-reader-t (t monads.error/m) 
+                           (mdo x <- ask
                                 y <- (asks rest)
                                 z <- (local reverse
                                             (lift-catch (mdo z <- (asks #(take 2 %))
