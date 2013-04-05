@@ -2,6 +2,12 @@
 
 Yet another clojure library for monads.
 
+For Leiningen:
+
+```clojure
+[bwo/monads "0.1.0"]
+```
+
 The primary goals for this library are expressivity and correctness.
 Things should do what they say on the tin, and it should not be a pain
 to construct complex monadic computations or use stacks of multiple
