@@ -21,12 +21,11 @@ instance, is spelled `>>=`, and the special syntax, `mdo`, apes
 Haskell's do-notation far more closely than does `algo.monads`'
 `domonad`. 
 
-There are some code examples and some benchmarking on the [wiki](https://github.com/bwo/monads/wiki).
+There are some code examples and some benchmarking on the
+[wiki](https://github.com/bwo/monads/wiki).
 
 Implementations are provided for reader, list, maybe, identity,
-continuation, state, and error monads, with transformers for all
-(though be aware that the list-t implementation does not always yield
-a true monad).
+continuation, state, and error monads, with transformers for all.
 
 ## Library organization
 
@@ -45,14 +44,17 @@ that if you require `[monads.error :as error]` you can then refer to
 the monad simply as `error/m` rather than as `error/error-m`.
 
 Several of the monads (state, error, writer, and maybe) return custom
-types whose accessors and constructors live in `monads.types`.
+types whose accessors and constructors live in `monads.types`, and
+several also define helper functions for running or lifting
+operations.
 
 ## Usage
 
 Monadic computations are run using `run-monad`. Its first argument is
-the monad to use; its second is the computation to run.
+the monad (or monad transformer stack) to use; its second is the
+computation to run.
 
-The reader, state, and continuation monads return do not immediately
+The reader, state, and continuation monads do not immediately
 return the value actually of interest; they have special
 `run-{reader,state,cont}{,-t}` functions which should be used instead.
 For `run-{reader,state,cont}`, since the monad is already known, it
@@ -62,7 +64,23 @@ and initial state, respectively.
 
 All monads support the basic `>>=` and `return` operations; all
 transformers additionally support the `lift` operation that lifts a
-computation in the base monad into the monad transformer.
+computation in the base monad into the monad transformer. The state,
+writer, maybe, and reader monads also define (each in their own
+namespace) a `lift-catch` function which lifts the error monad's
+`catch-error`. E.g.:
+
+```clojure
+monads.reader> (run-reader-t (t monads.error/m) (mdo x <- ask
+                                y <- (asks rest)
+                                z <- (local reverse
+                                            (lift-catch (mdo z <- (asks #(take 2 %))
+                                                             (lift (throw-error "oops"))
+                                                             (return (apply + z)))
+                                                        (constantly (return -1))))
+                                (return (concat [z] y x)))
+                             [1 2 3 4])
+#<Either [:right (-1 2 3 4 1 2 3 4)]>
+```
 
 Additional operations are supported only by some monads: 
 
@@ -139,6 +157,9 @@ definition of `guard`:
     (return nil)
     mzero))
 ```
+
+These are just ordinary Clojure functions that need not know anything
+about the context in which they will eventually be used.
 
 ## Special syntax
 
