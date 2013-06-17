@@ -53,6 +53,19 @@
 (deftype Pair [fst snd]
   clojure.lang.Seqable
   (seq [_] (list fst snd))
+  clojure.lang.Indexed
+  (nth [_ i]
+    (case i
+      0 fst
+      1 snd
+      (throw (IndexOutOfBoundsException.))))
+  (nth [_ i notfound]
+    (case i
+      0 fst
+      1 snd
+      notfound))
+  clojure.lang.Counted
+  (count [_] 2)
   Object
   (equals [this other]
     (when-instance Pair other
