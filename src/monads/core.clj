@@ -1,9 +1,7 @@
 (ns monads.core
-  (:require [monads.types :as types]
-            [clojure.set :as s]
-            [the.parsatron :as parsatron]
-            [macroparser.bindings :as bindings]
-            [macroparser.monads :as parser])
+  (:require [monads.mdo :as mdo]
+            [monads.types :as types]
+            [clojure.set :as s])
   (:use [monads.types :only [if-instance]])
   (:import [monads.types Return Returned Bind Pair Mplus]))
 
@@ -30,18 +28,8 @@
 (defmacro defmonad [name & {:as params}]
   `(def ~name (monad ~@(apply concat params))))
 
-(defn- unparse-m-expr [inside outside]
-  (case (:type outside)
-    :let `(let [~@(mapcat (fn [{:keys [bound expr]}] [(bindings/unparse-bindings bound) expr])
-                          (:bindings outside))]
-            ~inside)
-    (:normal :bind) `(>>= ~(:expr outside) (fn [~(bindings/unparse-bindings (:bound outside))]
-                                             ~inside))))
-
 (defmacro mdo [& exprs]
-  (let [parsed (reverse (parsatron/run (parser/parse-mdo) exprs))]
-    (assert (= :normal (:type (first parsed))) "Last expression in mdo must be a normal clojure expression.")
-    (reduce unparse-m-expr (:expr (first parsed)) (rest parsed))))
+  `(mdo/mdo >>= ~@exprs))
 
 (defmacro run-mdo [m & exprs]
   `(run-monad ~m (mdo ~@exprs)))
