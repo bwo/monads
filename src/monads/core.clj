@@ -75,9 +75,9 @@
   [v]
   (Returned. (fn [m] ((-> m :monadstate :put-state) v))))
 (defn modify
-  "Transform the current state by the function f."
-  [f]
-  (>>= get-state (comp put-state f)))
+  "Transform the current state by the function f, with extra args args."
+  [f & args]
+  (>>= get-state (comp put-state #(apply f % args))))
 
 ;;monadwriter
 (defn tell
@@ -134,7 +134,7 @@
   [f comp] (Returned. (fn [m] ((-> m :monadreader :local) f comp))))
 
 (defn asks
-  "Return the environment transformed by the function f."
-  [f]
+  "Return the environment transformed by the function f, with extra args args."
+  [f & args]
   (mdo x <- ask
-       (return (f x))))
+       (return (apply f x args))))
