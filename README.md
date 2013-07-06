@@ -143,7 +143,7 @@ A (not very systematic) selection of monad functions is provided in
 - `ap`: lifts function application, but only for curried functions:
 
    ```clojure
-   (run-monad maybe-m (ap (ap (return (curryfn #(+ %1 %2))) (return 1)) (return 2)))
+   (run-monad maybe-m (ap (ap (return (curryfn [a b] (+ a b))) (return 1)) (return 2)))
    #<Just 3>
    ```
 
