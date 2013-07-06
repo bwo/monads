@@ -24,7 +24,7 @@
        ~(functions/unparse-arities arities))))
 
 (defmacro defcurryfn
-  {:arglists (-> defn var meta :arglists)}
+  {:arglists (-> defn var meta :arglists first list)}
   [& args]
   (let [parsed (parsatron/run (functions/parse-defn-like) args)
         attr-map (:attr-map parsed)
