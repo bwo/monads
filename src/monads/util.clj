@@ -1,7 +1,6 @@
 (ns monads.util
   (:require [the.parsatron :as parsatron]
-            [macroparser.functions :as functions]
-            [macroparser.bindings :as bindings])
+            [macroparser.functions :as functions])
   (:use [monads.core :only [mzero >>= mdo return mplus]]))
 
 (defmacro curryfn
