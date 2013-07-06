@@ -65,17 +65,13 @@
     `(do (deflift-m-n ~lo)
          (deflift-m-ns ~(inc lo) ~hi))))
 
-(defn lift-m-2
+(defcurryfn lift-m-2
   "As lift-m but for binary functions: transforms a -> b -> c into m a
    -> m b -> m c. Likewise for lift-m-3, etc."
-  ([f] (fn
-         ([x] (lift-m-2 f x))
-         ([x y] (lift-m-2 f x y))))
-  ([f m] #(lift-m-2 f m %))
-  ([f m1 m2]
-     (mdo a <- m1
-          b <- m2
-          (return (f a b)))))
+  [f m1 m2]
+  (mdo a <- m1
+       b <- m2
+       (return (f a b))))
 
 (deflift-m-ns 3 9)
 
