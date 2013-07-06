@@ -35,6 +35,19 @@
 (defmacro run-mdo [m & exprs]
   `(run-monad ~m (mdo ~@exprs)))
 
+(defn lift-m
+  "Transform a function a -> b into a monadic function m a -> m b."
+  ([f] #(lift-m f %))
+  ([f m] (>>= m (comp return f))))
+
+(defmacro ^:private define-fmaps [types]
+  (when (seq types)
+    `(do (defmethod f/fmap ~(first types) [f# o#]
+           (lift-m f# o#))
+         (define-fmaps ~(rest types)))))
+
+(define-fmaps [Return Mplus Returned Bind])
+
 ;;; monadplus
 (def ^{:doc "The zero value for monadplus instances"}
   mzero (Returned. (fn [m] (-> m :monadplus :mzero))))
@@ -50,23 +63,12 @@
   [msg]
   (Returned. (fn [m] ((-> m :monadfail :mfail) msg))))
 
+;; monadtrans
 (defn lift
   "Lift the computation inner up a level in the monad transformer stack."
   [inner]
   (Returned. (fn [m] ((-> m :monadtrans :lift) inner))))
 
-(defn lift-m
-  "Transform a function a -> b into a monadic function m a -> m b."
-  ([f] #(lift-m f %))
-  ([f m] (>>= m (comp return f))))
-
-(defmacro ^:private define-fmaps [types]
-  (when (seq types)
-    `(do (defmethod f/fmap ~(first types) [f# o#]
-           (lift-m f# o#))
-         (define-fmaps ~(rest types)))))
-
-(define-fmaps [Return Mplus Returned Bind])
 
 ;; monadstate
 (def ^{:doc "Return the current state"}
