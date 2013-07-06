@@ -21,12 +21,6 @@
     (assert (nil? (-> arity :bindings :rest)) "Can't curry functions with rest args")
     body))
 
-
-(defn lift-m
-  "Transform a function a -> b into a monadic function m a -> m b."
-  ([f] #(lift-m f %))
-  ([f m] (>>= m (comp return f))))
-
 (defn sequence-m
   "Transform a sequence of monadic values [m a] into a monadic value
    which is a sequence, m [a]."

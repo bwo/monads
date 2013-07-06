@@ -1,7 +1,7 @@
 (ns monads.state
   (:require [monads.core :refer :all :exclude [get-state put-state modify]])
   (:use [monads.types :only [fst snd]]
-        [monads.util :only [curryfn lazy-pair lift-m]])
+        [monads.util :only [curryfn lazy-pair]])
   (:import [monads.types Returned Pair]))
 
 (declare state-t)

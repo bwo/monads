@@ -1,6 +1,7 @@
 (ns monads.core
   (:require [monads.mdo :as mdo]
             [monads.types :as types]
+            [clojure.algo.generic.functor :as f]
             [clojure.set :as s])
   (:use [monads.types :only [if-instance]])
   (:import [monads.types Return Returned Bind Pair Mplus]))
@@ -53,6 +54,19 @@
   "Lift the computation inner up a level in the monad transformer stack."
   [inner]
   (Returned. (fn [m] ((-> m :monadtrans :lift) inner))))
+
+(defn lift-m
+  "Transform a function a -> b into a monadic function m a -> m b."
+  ([f] #(lift-m f %))
+  ([f m] (>>= m (comp return f))))
+
+(defmacro ^:private define-fmaps [types]
+  (when (seq types)
+    `(do (defmethod f/fmap ~(first types) [f# o#]
+           (lift-m f# o#))
+         (define-fmaps ~(rest types)))))
+
+(define-fmaps [Return Mplus Returned Bind])
 
 ;; monadstate
 (def ^{:doc "Return the current state"}

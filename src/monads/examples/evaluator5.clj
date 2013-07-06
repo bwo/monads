@@ -3,7 +3,7 @@
             [monads.state :as s]
             [monads.writer :as w]
             [monads.error :as error])
-  (:use [monads.util :only [lift-m lift-m* guard]]))
+  (:use [monads.util :only [lift-m* guard]]))
 
 (defn const [x]
   (if (symbol? x)

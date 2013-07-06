@@ -1,8 +1,7 @@
 (ns monads.maybe
   (:require [monads.core :refer :all])
   (:import [monads.types Returned])
-  (:use [monads.types :only [from-just nothing? just nothing maybe]]
-        [monads.util :only [lift-m]]))
+  (:use [monads.types :only [from-just nothing? just nothing maybe]]))
 
 (declare maybe-t)
 

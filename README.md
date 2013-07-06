@@ -111,6 +111,11 @@ existing code.
 
 ## Utility functions
 
+The function `lift-m`, which lifts a function defined over types `a ->
+b` to one defined over types `m a -> m b` for any monad m, is provided
+in monads.core; importing this file also makes all monads correctly
+treat the `fmap` defined in algo.generic correctly.
+
 A (not very systematic) selection of monad functions is provided in
 `monads.util`:
 
@@ -120,9 +125,6 @@ A (not very systematic) selection of monad functions is provided in
 - `(mwhen p m)`: execute monadic computation `m` if `p` is truthy.
 - `(guard p)`: exit from the computation if `p` is falsy (requires
    `mzero`).
-- `(lift-m f [m])`: lift the unary function `f` to be
-    monadic, returning the monadic function with one arg or applying it
-    immediately with two.
 - `(lift-m-2 f [m [m2]])`: as `lift-m` but for binary functions.
    
     There are also `lift-m-3` through `lift-m-8`. All the `lift-m-n`

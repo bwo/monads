@@ -2,7 +2,7 @@
   (:require [monads.core :refer :all]
             [monads.state :as s]
             [monads.writer :as w])
-  (:use [monads.util :only [lift-m lift-m*]]))
+  (:use [monads.util :only [lift-m*]]))
 
 (defn const [x]
   (if (symbol? x)
