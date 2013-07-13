@@ -3,7 +3,7 @@
             [monads.error :as e]
             [monads.types :as t])
   (:use monads.core
-        expectations))
+        [expectations :exclude [fail]]))
 
 (expect [[1 [2]] [3 2]]
         (seq (run-monad w/writer-m (mdo x <- (return 3)

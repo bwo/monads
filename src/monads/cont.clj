@@ -1,7 +1,7 @@
 (ns monads.cont
-  (:require [monads.core :refer :all :exclude [reorganize]])
-  (:use [monads.util :only [curryfn]]
-        [monads.types :only [if-instance]])
+  (:require [monads.core :refer :all :exclude [reorganize]]
+            [monads.types :as types :refer [if-instance]])
+  (:use [monads.util :only [curryfn]])
   (:import [monads.types Returned Mplus Bind]))
 
 ;; this type shouldn't be exposed
@@ -11,20 +11,20 @@
     (with-out-str (print [c v]))))
 
 (defmonad cont-m
-  :return (curryfn [r c] (Cont. c r))
-  :bind (fn [m f]
-          (fn [r]
-            (Cont. m (fn [v] (Cont. (f v) r))))))
+  (mreturn [me r] (fn [c] (Cont. c r)))
+  (bind [me m f] (fn [r] (Cont. m (fn [v] (Cont. (f v) r))))))
 
 ;; note: no use of m!
 (defn callcc [f]
   (Returned. (curryfn [m c] (Cont. (f (curryfn [v _] (Cont. c v))) c))))
 
 (defn cont-t [inner]
-  (let [i-return (:return inner)]
-    (assoc cont-m
-      :monadtrans {:lift (curryfn [m c] (run-monad inner (>>= m c)))}
-      :inner inner)))
+  (monad
+   (mreturn [me r] (fn [c] (Cont. c r)))
+   (bind [me m f] (fn [r] (Cont. m (fn [v] (Cont. (f v) r)))))
+   types/MonadTrans
+   (inner [me] inner)
+   (lift [me m] (fn [c] (run-monad inner (>>= m c))))))
 
 (defn run-cont [m]
   (loop [m m c identity]

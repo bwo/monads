@@ -6,8 +6,8 @@
             [monads.maybe :as m]
             [monads.reader :as r]
             [monads.types :as t])
-  (:use expectations
-        monads.core))
+  (:use [expectations :exclude [fail]]
+        [monads.core :exclude [fail]]))
 
 (def numbered (tn/node 0
                        (tn/node 0 nil (tn/node 1

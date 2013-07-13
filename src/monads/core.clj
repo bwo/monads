@@ -20,14 +20,47 @@
 (defn run-monad [m computation]
   (types/mrun computation m))
 
-(defmacro monad [& {:as params}]
-  `(let [params# (s/rename-keys ~params {:>>= :bind})]
-     (assert (:bind params#) (str "monad " ~name " requires a bind operation!"))
-     (assert (:return params#) (str "monad " ~name " requires a return operation!"))
-     params#))
+(defmacro reify+
+  "Like reify, except that one can conditionally decide what
+   interfaces to implement, using \"when\".
 
-(defmacro defmonad [name & {:as params}]
-  `(def ~name (monad ~@(apply concat params))))
+   The syntax of reify is extended to allow both
+
+   Protocol
+   (method [] ...)
+
+   lines and also
+
+   (when condition
+      Protocol2
+      (method2 [] ...))
+
+   If, at runtime, condition is truthy, the reified value will also
+   support Protocol2."
+  [& signatures]
+  (let [when? (fn [f] (and (seq? f)
+                          (symbol? (first f))
+                          (= #'when (resolve (first f)))))
+        whens (filter when? signatures)
+        signatures (remove when? signatures)
+        reified (gensym "reified")]
+    `(let [~reified (reify ~@signatures)]
+       ~@(for [wh whens]
+           `(when ~(second wh)
+              (extend-type (class ~reified)
+                ~@(drop 2 wh))))
+       ~reified)))
+
+(defmacro monad [& params]
+  (let [return (first (filter #(and (seq? %) (= 'mreturn (first %))) params))
+        bind (first (filter #(and (seq? %) (= 'bind (first %))) params))
+        params (remove #(and (seq? %) (#{'mreturn 'bind} (first %))) params)]
+    (assert bind "monad cannot be defined without bind!")
+    (assert return "monad cannot be defined without mreturn!")
+    `(reify+ types/Monad ~return ~bind ~@params)))
+
+(defmacro defmonad [name & params]
+  `(def ~name (monad ~@params)))
 
 (defmacro mdo [& exprs]
   `(mdo/mdo >>= ~@exprs))
@@ -50,7 +83,7 @@
 
 ;;; monadplus
 (def ^{:doc "The zero value for monadplus instances"}
-  mzero (Returned. (fn [m] (-> m :monadplus :mzero))))
+  mzero (Returned. (fn [m] (types/mzero m))))
 
 (defn mplus
   "Add the values of left and right. Required to be associative."
@@ -58,26 +91,26 @@
   (Mplus. left right))
 
 ;; monadfail
-(defn mfail
+(defn fail
   "Abort the current computation, with the message msg (if supported)."
   [msg]
-  (Returned. (fn [m] ((-> m :monadfail :mfail) msg))))
+  (Returned. (fn [m] (types/fail m msg))))
 
 ;; monadtrans
 (defn lift
   "Lift the computation inner up a level in the monad transformer stack."
   [inner]
-  (Returned. (fn [m] ((-> m :monadtrans :lift) inner))))
+  (Returned. (fn [m] (types/lift m inner))))
 
 
 ;; monadstate
 (def ^{:doc "Return the current state"}
   get-state
-  (Returned. (fn [m] (-> m :monadstate :get-state))))
+  (Returned. (fn [m] (types/get-state m))))
 (defn put-state
   "Make the state be the value v."
   [v]
-  (Returned. (fn [m] ((-> m :monadstate :put-state) v))))
+  (Returned. (fn [m] (types/put-state m v))))
 (defn modify
   "Transform the current state by the function f, with extra args args."
   [f & args]
@@ -87,19 +120,19 @@
 (defn tell
   "Add the value w to the log. Note that w must be a monoid."
   [w]
-  (Returned. (fn [m] ((-> m :monadwriter :tell) w))))
+  (Returned. (fn [m] (types/tell m w))))
 
 (defn listen
   "Execute the computation comp, and return both its return value and
    the log it produces."
   [comp]
-  (Returned. (fn [m] ((-> m :monadwriter :listen) comp))))
+  (Returned. (fn [m] (types/listen m comp))))
 
 (defn pass
   "Execute the computation comp, which should return a value and a
    function, and return the value, applying the function to the log."
   [comp]
-  (Returned. (fn [m] ((-> m :monadwriter :pass) comp))))
+  (Returned. (fn [m] (types/pass m comp))))
 
 (defn listens
   "Execute the computation m, adding the result of calling f on its log to
@@ -119,23 +152,23 @@
 (defn throw-error
   "Abort the current computation, with the error e."
   [e]
-  (Returned. (fn [m] ((-> m :monaderror :throw-error) e))))
+  (Returned. (fn [m] (types/throw-error m e))))
 
 (defn catch-error
   "Try running the computation comp, calling the function handler if
    it is aborted by an error. The handler function will receive the
    error value as its argument."
   [comp handler]
-  (Returned. (fn [m] ((-> m :monaderror :catch-error) comp handler))))
+  (Returned. (fn [m] (types/catch-error m comp handler))))
 
 ;; monadreader
 (def ^{:doc "Return the current environment."}
   ask
-  (Returned. (fn [m] (-> m :monadreader :ask))))
+  (Returned. (fn [m] (types/ask m))))
 
 (defn local
   "Run the computation comp in an environment transformed by the function f."
-  [f comp] (Returned. (fn [m] ((-> m :monadreader :local) f comp))))
+  [f comp] (Returned. (fn [m] (types/local m f comp))))
 
 (defn asks
   "Return the environment transformed by the function f, with extra args args."

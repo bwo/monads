@@ -6,7 +6,8 @@
             [monads.types :as t]
             [monads.util :as u]
             [monads.writer :as w])
-  (:use expectations monads.core))
+  (:use [expectations :exclude [fail]]
+        monads.core))
 
 (expect -1
         (->> (catch-error

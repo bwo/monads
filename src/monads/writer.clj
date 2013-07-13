@@ -1,8 +1,8 @@
 (ns monads.writer
   (:require [monads.core :refer :all]
+            [monads.types :as types :refer [fst snd]]
             [babbage.monoid :as m])
-  (:use [monads.types :only [fst snd]]
-        [monads.util :only [lazy-pair]]
+  (:use [monads.util :only [lazy-pair]]
         [babbage.monoid :only [<>]])
   (:import [monads.types Returned Pair]))
 
@@ -13,67 +13,58 @@
   (value [self] self)
   (<> [self o] (concat self o)))
 
-(declare writer-t)
-
-(defn writer-t* [inner]
-  (let [i-return (:return inner)]
-    (monad
-     :inner inner
-     :return (fn [v] (i-return (Pair. v nil)))
-     :monadfail (when (:monadfail inner)
-                  (let [ifail (-> inner :monadfail :mfail)]
-                    {:mfail (fn [msg]
-                              (ifail msg))}))
-     :monadtrans {:lift (fn [m]
-                          (run-mdo inner
-                                   a <- m
-                                   (return (Pair. a nil))))}
-     :monadplus (when (:monadplus inner)
-                  (let [i-plus (-> inner :monadplus :mplus)
-                        i-zero (-> inner :monadplus :mzero)]
-                    {:mzero i-zero
-                     :mplus (fn [lr]
-                              (i-plus (lazy-pair
-                                       (run-monad (writer-t inner) (first lr))
-                                       (run-monad (writer-t inner) (second lr)))))}))
-     :monadwriter {:tell (fn [w] (i-return (Pair. nil w)))
-                   :listen (fn [comp]
-                             (run-mdo inner
-                                      ^Pair p <- (run-monad (writer-t inner) comp)
-                                      (return (Pair. [(fst p) (snd p)] (snd p)))))
-                   :pass (fn [comp]
-                           (run-mdo inner
-                                    ^Pair p <- (run-monad (writer-t inner) comp)
-                                    (return (Pair. (first (fst p))
-                                                   ((second (fst p)) (snd p))))))}
-     :bind (fn [m f]
-             (run-mdo inner
-                      ^Pair p <- (run-monad (writer-t inner) m)
-                      let a = (fst p) w = (snd p)
-                      ^Pair p <- (run-monad (writer-t inner) (f a))
-                      let b = (fst p) w' = (snd p)
-                      (return (Pair. b (<> w w'))))))))
-
-(def writer-t (memoize writer-t*))
+(defn writer-t [inner]
+  (monad
+   (mreturn [me v] (types/mreturn inner (Pair. v nil)))
+   (bind [me m f]
+         (run-mdo inner
+                  ^Pair p <- (run-monad me m)
+                  let a = (fst p) w = (snd p)
+                  ^Pair p <- (run-monad me (f a))
+                  let b = (fst p) w' = (snd p)
+                  (return (Pair. b (<> w w')))))
+   types/MonadTrans
+   (inner [me] inner)
+   (lift [me c] (run-mdo inner
+                         a <- c
+                         (return (Pair. a nil))))
+   (when (types/monadplus? inner)
+     types/MonadPlus
+     (mzero [me] (types/mzero inner))
+     (mplus [me lr] (types/mplus inner
+                                 (lazy-pair
+                                  (run-monad me (first lr))
+                                  (run-monad me (second lr))))))
+   (when (types/monadfail? inner)
+     types/MonadFail
+     (fail [me msg] (types/fail inner msg)))
+   types/MonadWriter
+   (tell [me w] (types/mreturn inner (Pair. nil w)))
+   (listen [me c] (run-mdo inner
+                           ^Pair p <- (run-monad me c)
+                           (return (Pair. [(fst p) (snd p)] (snd p)))))
+   (pass [me c] (run-mdo inner
+                         ^Pair p <- (run-monad me c)
+                         (return (Pair. (first (fst p))
+                                        ((second (fst p)) (snd p))))))))
 
 (defmonad writer-m
-  :return (fn [v] (Pair. v nil))
-  :bind (fn [m f]
-          (let [^Pair p (run-monad writer-m m)
-                a (fst p)
-                w (snd p)
-                ^Pair p (run-monad writer-m (f a))
-                b (fst p)
-                w' (snd p)]
-            (Pair. b (<> w w'))))
-  :monadwriter {:tell (fn [w] (Pair. nil w))
-                :listen (fn [comp]
-                          (let [^Pair p (run-monad writer-m comp)]
-                            (Pair. [(fst p) (snd p)] (snd p))))
-                :pass (fn [comp]
-                        (let [^Pair p (run-monad writer-m comp)]
-                          (Pair. (first (fst p))
-                                 ((second (fst p)) (snd p)))))})
+  (mreturn [me v] (Pair. v nil))
+  (bind [me m f]
+        (let [^Pair p (run-monad me m)
+              a (fst p)
+              w (snd p)
+              ^Pair p (run-monad me (f a))
+              b (fst p)
+              w' (snd p)]
+          (Pair. b (<> w w'))))
+  types/MonadWriter
+  (tell [me w] (Pair. nil w))
+  (listen [me comp] (let [^Pair p (run-monad me comp)]
+                      (Pair. [(fst p) (snd p)] (snd p))))
+  (pass [me comp] (let [^Pair p (run-monad me comp)]
+                    (Pair. (first (fst p))
+                           ((second (fst p)) (snd p))))))
 
 
 (def t writer-t)
@@ -82,6 +73,6 @@
 (defn lift-catch [m h]
   (Returned.
    (fn [t]
-     (run-monad (:inner t)
+     (run-monad (types/inner t)
                 (catch-error (run-monad t m)
                              (fn [err] (run-monad t (h err))))))))
