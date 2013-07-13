@@ -21,7 +21,7 @@
                   (lookahead (anything-but '=)))
              (many1 (attempt (let->> [bound (bindings/binding-form-simple)
                                       _ (symbol '=)
-                                      expr (expression)]
+                                      expr (anything-but '<-)]
                                      (always {:bound bound :expr expr}))))))))
 
 (defparser normal-expression []
