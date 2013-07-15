@@ -71,4 +71,4 @@
    (curryfn [t s]
      (run-monad (types/inner t)
                 (catch-error (run-state-t t m s)
-                             (fn [e] (run-state-t t (h m) s)))))))
+                             (fn [e] (run-state-t t (h e) s)))))))
