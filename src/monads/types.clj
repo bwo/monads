@@ -123,6 +123,37 @@
 (defn fst [^Pair o] (.fst o))
 (defn snd [^Pair o] (.snd o))
 
+(deftype Triple [f s t]
+  clojure.lang.Seqable
+  (seq [_] (list f s t))
+  clojure.lang.Indexed
+  (nth [_ i nf]
+    (case i
+      0 f
+      1 s
+      2 t
+      nf))
+  (nth [_ i]
+    (case i 0 f 1 s 2 t (throw (IndexOutOfBoundsException.))))
+  clojure.lang.Counted
+  (count [_] 3)
+  Object
+  (equals [this other]
+    (when-instance Triple other
+                   (and (= f (.f other))
+                        (= s (.s other))
+                        (= t (.t other)))))
+  (toString [this]
+    (with-out-str (print [f s t]))))
+
+(defn fstof3 [^Triple o]
+  (.f o))
+
+(defn sndof3 [^Triple o]
+  (.s o))
+
+(defn thd [^Triple o]
+  (.t o))
 
 (deftype Either [v type]
   Object
