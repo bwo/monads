@@ -13,7 +13,7 @@
    (mreturn [me x] (fn [s e] (types/mreturn inner (Triple. x s nil))))
    (bind [me m f] (fn [s e]
                     (run-mdo inner
-                             ^Triple t <- (run-rws-t me s e)
+                             ^Triple t <- (run-rws-t me m s e)
                              let a = (.f t)
                              s' = (.s t)
                              w = (.t t)
@@ -31,17 +31,20 @@
    (local [me f m] (fn [s e]
                      (run-rws-t me m s (f e))))
    types/MonadWriter
-   (tell [me w] (fn [e s] (types/mreturn inner (Triple. nil s w))))
-   (listen [me comp] (fn [e s]
+   (tell [me w] (fn [s e] (types/mreturn inner (Triple. nil s w))))
+   (listen [me comp] (fn [s e]
                        (run-mdo inner
                                 ^Triple t <- (run-rws-t me comp s e)
                                 (return (Triple. [(.f t) (.t t)] (.s t) (.t t))))))
-   (pass [me comp] (fn [e s]
+   (pass [me comp] (fn [s e]
                      (run-mdo inner
                               ^Triple t <- (run-rws-t me comp s e)
                               (return (Triple. (first (.f t))
                                                (.s t)
                                                ((second (.f t)) (.t t)))))))
+   types/MonadState
+   (get-state [me] (fn [s e] (types/mreturn inner (Triple. s s nil))))
+   (put-state [me x] (fn [s e] (types/mreturn inner (Triple. x x nil))))
    (when (types/monadfail? inner)
      types/MonadFail
      (fail [me msg] (fn [s e] (types/fail inner msg))))
