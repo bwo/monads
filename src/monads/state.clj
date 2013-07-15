@@ -13,7 +13,7 @@
    (bind [me m f] (fn [s]
                     (run-mdo inner
                              ^Pair p <- (m s)
-                             let v = (fst p) s = (snd p)
+                             let v = (.fst p) s = (.snd p)
                              (run-state-t me (f v) s))))
    
    types/MonadTrans
@@ -48,7 +48,7 @@
   (bind [me m f]
         (fn [s]
           (let [^Pair p (m s)]
-            (run-state (f (fst p)) (snd p)))))
+            (run-state (f (.fst p)) (.snd p)))))
   types/MonadState
   (get-state [me] (fn [s] (Pair. s s)))
   (put-state [me v] (fn [_] (Pair. v v))))

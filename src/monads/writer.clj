@@ -19,9 +19,9 @@
    (bind [me m f]
          (run-mdo inner
                   ^Pair p <- (run-monad me m)
-                  let a = (fst p) w = (snd p)
+                  let a = (.fst p) w = (.snd p)
                   ^Pair p <- (run-monad me (f a))
-                  let b = (fst p) w' = (snd p)
+                  let b = (.fst p) w' = (.snd p)
                   (return (Pair. b (<> w w')))))
    types/MonadTrans
    (inner [me] inner)
@@ -42,29 +42,29 @@
    (tell [me w] (types/mreturn inner (Pair. nil w)))
    (listen [me c] (run-mdo inner
                            ^Pair p <- (run-monad me c)
-                           (return (Pair. [(fst p) (snd p)] (snd p)))))
+                           (return (Pair. [(.fst p) (.snd p)] (.snd p)))))
    (pass [me c] (run-mdo inner
                          ^Pair p <- (run-monad me c)
-                         (return (Pair. (first (fst p))
-                                        ((second (fst p)) (snd p))))))))
+                         (return (Pair. (first (.fst p))
+                                        ((second (.fst p)) (.snd p))))))))
 
 (defmonad writer-m
   (mreturn [me v] (Pair. v nil))
   (bind [me m f]
         (let [^Pair p (run-monad me m)
-              a (fst p)
-              w (snd p)
+              a (.fst p)
+              w (.snd p)
               ^Pair p (run-monad me (f a))
-              b (fst p)
-              w' (snd p)]
+              b (.fst p)
+              w' (.snd p)]
           (Pair. b (<> w w'))))
   types/MonadWriter
   (tell [me w] (Pair. nil w))
   (listen [me comp] (let [^Pair p (run-monad me comp)]
-                      (Pair. [(fst p) (snd p)] (snd p))))
+                      (Pair. [(.fst p) (.snd p)] (.snd p))))
   (pass [me comp] (let [^Pair p (run-monad me comp)]
-                    (Pair. (first (fst p))
-                           ((second (fst p)) (snd p))))))
+                    (Pair. (first (.fst p))
+                           ((second (.fst p)) (.snd p))))))
 
 
 (def t writer-t)
