@@ -54,8 +54,7 @@
                                     (run-rws-t me (first lr) s e)
                                     (run-rws-t me (second lr) s e))))))))
 
-(defn run-rws [computation state env]
-  ((run-monad rws-m computation) state env))
+(declare run-rws)
 
 (defmonad rws-m
   (mreturn [me x] (fn [s e] (Triple. x s nil)))
@@ -90,7 +89,10 @@
   (get-state [me] (fn [s e] (Triple. s s nil)))
   (put-state [me x] (fn [s e] (Triple. x x nil))))
 
-(defn catch-error [m h]
+(defn run-rws [computation state env]
+  ((run-monad rws-m computation) state env))
+
+(defn lift-catch [m h]
   (Returned.
    (fn [t]
      (fn [s e]
