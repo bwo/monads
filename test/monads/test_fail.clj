@@ -6,12 +6,12 @@
             [monads.reader :as r]
             [monads.types :as t]
             [monads.list :as l])
-  (:use expectations
+  (:use [expectations :exclude [fail]]
         monads.core))
 
 (defn safe-div [num denom]
   (if (== 0 denom)
-    (mfail "zero denominator!")
+    (fail "zero denominator!")
     (return (/ num denom))))
 
 (expect nil (run-monad m/m (safe-div 4 0)))

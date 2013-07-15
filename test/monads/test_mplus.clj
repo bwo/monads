@@ -7,8 +7,8 @@
             [monads.types :as t]
             [monads.util :as u]
             [monads.writer :as w])
-    (:use expectations
-          monads.core))
+  (:use [expectations :exclude [fail]]
+        monads.core))
 
 (expect 3 (->> (mplus (return 3) (return 6))
                (run-monad (e/error-t m/maybe-m))

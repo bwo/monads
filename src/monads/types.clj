@@ -1,9 +1,55 @@
-(ns monads.types)
+(ns monads.types
+  (:require [clojure.string :as str]))
 
 (set! *warn-on-reflection* true)
 
 (defprotocol MRun
   (mrun [this m]))
+
+(defprotocol Monad
+  (mreturn [this o])
+  (bind [this m f]))
+
+(defmacro defprotocol+
+  "Define a protocol, and a predicate for testing for satisfaction.
+   The predicate will be the name of the protocol, lowercased and with
+   a ? appended."
+  [nm & args]
+  (let [nm? (symbol (str (str/lower-case nm) "?"))]
+    `(do (defprotocol ~nm ~@args)
+         (defn ~nm? [o#] (satisfies? ~nm o#)))))
+
+(defprotocol+ MonadPlus
+  (mplus [this lr])
+  (mzero [this]))
+
+;; the remaining protocols don't necessarily need to be here---in
+;; principle, these and any others should be definable more or less
+;; anywhere.
+
+(defprotocol+ MonadState
+  (get-state [this])
+  (put-state [this o]))
+
+(defprotocol+ MonadTrans
+  (lift [this comp])
+  (inner [this]))
+
+(defprotocol+ MonadFail
+  (fail [this msg]))
+
+(defprotocol+ MonadError
+  (catch-error [this comp handler])
+  (throw-error [this error]))
+
+(defprotocol+ MonadReader
+  (ask [me])
+  (local [me f comp]))
+
+(defprotocol+ MonadWriter
+  (tell [me w])
+  (listen [me c])
+  (pass [me c]))
 
 (extend-protocol MRun
   Object
@@ -16,14 +62,14 @@
   (toString [this]
     (with-out-str (print v)))
   MRun
-  (mrun [_ m] ((:return m) v)))
+  (mrun [_ m] (mreturn m v)))
 
 (deftype Mplus [l r]
   Object
   (toString [this]
     (with-out-str (print l r)))
   MRun
-  (mrun [_ m] ((-> m :monadplus :mplus) [l r])))
+  (mrun [_ m] (mplus m [l r])))
 
 (deftype Returned [v]
   Object
@@ -37,7 +83,7 @@
   (toString [this]
     (with-out-str (print [comp f])))
   MRun
-  (mrun [_ m] ((:bind m) (mrun comp m) f)))
+  (mrun [_ m] (bind m (mrun comp m) f)))
 
 (defmacro if-instance [cls obj then else]
   `(if (instance? ~cls ~obj)

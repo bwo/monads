@@ -4,7 +4,7 @@
             [monads.types :as t]
             [monads.util :as u])
   (:use monads.core
-        expectations))
+        [expectations :exclude [fail]]))
 
 ;; actually just testing the stackoverflow-avoiding code
 

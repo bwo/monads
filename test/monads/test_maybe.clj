@@ -3,9 +3,9 @@
   ;; just import the relevant fns/entities
   (:use monads.core
         monads.maybe
-        monads.types
+        [monads.types :only [from-just]]
         monads.util
-        expectations)
+        [expectations :exclude [fail]])
   (:require [monads.identity :as i]))
 
 (given [m] (do (expect nil (run-monad m mzero))
