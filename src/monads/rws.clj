@@ -102,3 +102,6 @@
        (run-monad (types/inner t)
                   (catch-error (run-rws-t t m s e)
                                (fn [err] (run-rws-t t (h err) s e))))))))
+
+(def t rws-t)
+(def m rws-m)
