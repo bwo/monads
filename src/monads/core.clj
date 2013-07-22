@@ -68,6 +68,8 @@
 (defmacro run-mdo [m & exprs]
   `(run-monad ~m (mdo ~@exprs)))
 
+(defn join [m] (>>= m identity))
+
 (defn lift-m
   "Transform a function a -> b into a monadic function m a -> m b."
   ([f] #(lift-m f %))

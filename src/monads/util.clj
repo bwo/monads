@@ -51,6 +51,9 @@
           (return ())
           (reverse ms)))
 
+(defn map-m [f args]
+  (sequence-m (map f args)))
+
 (defmacro ^:private deflift-m-n [n]
   (let [nm (symbol (str "lift-m-" n))
         m-args (map #(symbol (str "m-" %)) (range 1 (inc n)))
