@@ -51,5 +51,10 @@
                  (let [v (run-monad me comp)]
                    (either #(run-monad me (handler %)) right v)))))
 
+(defn lift-local [f m]
+  (Returned. (fn [t]
+               (run-monad (types/inner t)
+                          (local f (run-monad t m))))))
+
 (def m error-m)
 (def t error-t)
