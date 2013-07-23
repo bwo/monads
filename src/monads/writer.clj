@@ -1,6 +1,7 @@
 (ns monads.writer
   (:require [monads.core :refer :all]
             [monads.types :as types :refer [fst snd]]
+            [monads.util :as u]
             [babbage.monoid :as m])
   (:use [monads.util :only [lazy-pair]]
         [babbage.monoid :only [<>]])
@@ -70,9 +71,6 @@
 (def t writer-t)
 (def m writer-m)
 
-(defn lift-catch [m h]
-  (Returned.
-   (fn [t]
-     (run-monad (types/inner t)
-                (catch-error (run-monad t m)
-                             (fn [err] (run-monad t (h err))))))))
+(def lift-local u/lift-local)
+(def lift-catch u/lift-catch)
+

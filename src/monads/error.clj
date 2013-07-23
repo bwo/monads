@@ -1,6 +1,7 @@
 (ns monads.error
   (:require [monads.core :refer :all]
-            [monads.types :as types])
+            [monads.types :as types]
+            [monads.util :as u])
   (:use [monads.types :only [from-right from-left right left left? either]])
   (:import [monads.types Returned Either]))
 
@@ -51,10 +52,7 @@
                  (let [v (run-monad me comp)]
                    (either #(run-monad me (handler %)) right v)))))
 
-(defn lift-local [f m]
-  (Returned. (fn [t]
-               (run-monad (types/inner t)
-                          (local f (run-monad t m))))))
+(def lift-local u/lift-local)
 
 (def m error-m)
 (def t error-t)

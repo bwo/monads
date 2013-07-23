@@ -1,7 +1,9 @@
 (ns monads.util
   (:require [the.parsatron :as parsatron]
-            [macroparser.functions :as functions])
-  (:use [monads.core :only [mzero >>= mdo return mplus]]))
+            [macroparser.functions :as functions]
+            [monads.types :as types])
+  (:use [monads.core :only [mzero >>= mdo return mplus run-monad local catch-error]])
+  (:import [monads.types Returned]))
 
 (defmacro curryfn
   {:arglists (-> fn var meta :arglists)}
@@ -115,3 +117,27 @@
 
 (defmacro lazy-pair [a b]
   `(lazy-seq (cons ~a (lazy-seq (cons ~b '())))))
+
+(defn lift-local
+  "Lift a reader's local operation into a monad transformer over a reader.
+
+   N.B. prefer the implementation defined in an individual monad's
+   namespace (e.g. error/lift-local), as a special definition may be
+   necessary. "
+  [f m]
+  (Returned. (fn [t]
+               (run-monad (types/inner t)
+                          (local f (run-monad t m))))))
+
+(defn lift-catch
+  "Lift an error monad's catcher-error into a monad transformer over an error monad.
+
+   N.B. prefer the implementation defined in an individual monad's
+   namespace (e.g. reader/lift-catch), as a special definition may be
+   necessary."
+  [m h]
+  (Returned.
+   (fn [t]
+     (run-monad (types/inner t)
+                (catch-error (run-monad t m)
+                             (fn [err] (run-monad t (h err))))))))
