@@ -100,12 +100,12 @@
   [addends]
   (reduce #(mplus %2 %1) (reverse addends)))
 
-(defn mwhen
+(defmacro mwhen
   "Execute the computation acc if p is truthy."
   [p acc]
-  (if p
-    acc
-    (return nil)))
+  `(if ~p
+    ~acc
+    ~(return nil)))
 
 (defn guard
   "If p is truthy, return (return nil), otherwise mzero, halting the
