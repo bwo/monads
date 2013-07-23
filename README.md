@@ -31,7 +31,9 @@ There are some code examples and some benchmarking on the
 [wiki](https://github.com/bwo/monads/wiki).
 
 Implementations are provided for reader, list, maybe, identity,
-continuation, state, and error monads, with transformers for all.
+continuation, state, and error monads, with transformers for all, as
+well as a rws monad (and transformer), combining reader, writer, and
+state operations.
 
 ## Library organization
 
@@ -277,55 +279,59 @@ monads.list> (def pythags (mdo a <- (range 1 200)
 
 ## Implementation
 
-Monads are implemented as maps; there are `monad` and `defmonad`
-macros, but all they do is allow a tiny bit of syntactic flexibility
-and ensure that there are at least implementations of `>>=` and
-`return`. The following definitions of the identity monad are equivalent:
+Monads are implemented with a protocol defining a binary `mreturn` and
+trinary `bind` operations; the additional parameter over `return` and
+`>>=` is for the carrier of the protocol. There are `monad` and `defmonad` macros which delegate to `reify`; the followuing definitions of the identity monad are equivalent:
 
-```clojure
+```
 (defmonad identity-m
-  :bind (fn [m f] (run-monad identity-m (f m)))
-  :return identity)
+  (mreturn [me x] x)
+  (bind [me m f] (run-monad me (f m))))
 
-(def identity-m {:bind (fn [m f] (run-monad identity-m (f m)))
-                 :return identity})
+(require '[monads.types :as types])
+(def identity-m 
+    (reify types/Monad
+       (mreturn [me x] x)
+       (bind [me m f] (run-monad me (f m)))))
 ```
 
-The `>>=` and `return` operations simply package their operands up
-into data structures which can then be interpreted by `run-monad`.
+However, `monad` and `defmonad` allow one to conditionally support
+other protocols as well, which is useful for defining monad
+transformers that support a protocol if the transformed, inner monad
+does.
 
-A monad supports the additional operations listed above by containing
-additional nested maps. For example, the error monad looks like this:
+Since the macros know that they are defining a monad, nothing special
+needs to be done to ensure that `mreturn` and `bind` find their homes
+in the right protocol; other protocols need to be given explicitly
+using `reify`-like syntax. For example, the `reader-t` transformer
+function looks like this:
 
 ```clojure
-(let [mzero (left nil)]
-  (defmonad error-m
-    :return right
-    :bind (fn [m f]
-            (let [r (run-monad error-m m)]
-              (either left #(run-monad error-m (f %)) r)))
-    :monadfail {:mfail left}
-    :monadplus {:mzero mzero
-                :mplus (fn [lr]
-                         (let [v (run-monad error-m (first lr))]
-                           (if (left? v)
-                             (run-monad error-m (second lr))
-                             v)))}
-    :monaderror {:throw-error left
-                 :catch-error (fn [comp handler]
-                                (let [v (run-monad error-m comp)]
-                                  (either #(run-monad m (handler %)) right v)))}))
+(defn reader-t [inner]
+  (monad
+   (mreturn [me v] (constantly (types/mreturn inner v)))
+   (bind [me m f] (fn [e]
+                    (run-mdo inner
+                             a <- (m e)
+                             (run-reader-t me (f a) e))))
+   types/MonadTrans
+   (inner [me] inner)
+   (lift [me c] (fn [e] (run-monad inner c)))
+   types/MonadReader
+   (ask [me] (fn [e] (types/mreturn inner e)))
+   (local [me f m] (fn [e] (run-reader-t me m (f e))))
+   (when (types/monadfail? inner)
+     types/MonadFail
+     (fail [me msg] (fn [e] (types/fail inner msg))))
+   (when (types/monadplus? inner)
+     types/MonadPlus
+     (mzero [me] (constantly (types/mzero inner)))
+     (mplus [me lr] (fn [e]
+                      (types/mplus inner
+                                   (lazy-pair (run-reader-t me (first lr) e)
+                                              (run-reader-t me (second lr) e))))))))
 ```
-
-The values `mzero`, `mplus`, etc. defined in `monads.core`, in turn,
-are or return values that, when run by run-monad, know how to look
-themselves up in the monad and find their implementations. Thus, you
-can provide a monad that implements `throw-error` and `catch-error`,
-or `ask` and `local`, etc., without using the existing error or reader
-monads. (For instance, you could define a read-write-state monad that
-combines the operations of the reader, writer, and state monads in
-one, without the overhead of lifting or excessive wrapping and
-unwrapping.)
+Note the conditional support for `MonadFail` and `MonadPlus`.
 
 ## A caveat about the stack
 
