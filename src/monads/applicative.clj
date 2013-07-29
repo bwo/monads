@@ -65,13 +65,13 @@
 
   Either
   (fapply [me o]
-    (if (types/right? me)
-      (if-let [f (types/cond-instance o
-                     Pure (.f o)
-                     Either (types/either (constantly nil) identity o))]
+    (if-let [f (types/cond-instance o
+                   Pure (.f o)
+                   Either (types/either (constantly nil) identity o))]
+      (if (types/right? me)
         (types/right (f (types/from-right me)))
-        o)
-      me))
+        me)
+      o))
 
   Return
   (fapply [me f] (fapply-mon me f))
