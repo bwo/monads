@@ -56,6 +56,12 @@
   [arity f]
   (curry* arity f))
 
+(defn mcat [f xs]
+  (lazy-seq
+   (if (not (seq xs))
+     nil
+     (concat (f (first xs)) (mcat f (rest xs))))))
+
 (defn sequence-m
   "Transform a sequence of monadic values [m a] into a monadic value
    which is a sequence, m [a]."

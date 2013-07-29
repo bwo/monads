@@ -3,13 +3,6 @@
             [monads.types :as types]
             [monads.util :as u]))
 
-
-(defn mcat [f xs]
-  (lazy-seq
-   (if (not (seq xs))
-     nil
-     (concat (f (first xs)) (mcat f (rest xs))))))
-
 (defmonad list-m
   (mreturn [me v] [v])
   (bind [me m f] (mcat (comp (partial run-monad me) f) m))
