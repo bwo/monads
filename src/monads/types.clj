@@ -96,6 +96,14 @@
     (let [~(with-meta obj {:tag cls}) ~obj]
       ~@forms)))
 
+(defmacro cond-instance [obj & cls-and-forms]
+  (when (seq cls-and-forms)
+    (if (= 1 (count cls-and-forms))
+      (first cls-and-forms)
+      `(if-instance  ~(first cls-and-forms) ~obj
+         ~(second cls-and-forms)
+         (cond-instance ~obj ~@(nnext cls-and-forms))))))
+
 (deftype Pair [fst snd]
   clojure.lang.Seqable
   (seq [_] (list fst snd))

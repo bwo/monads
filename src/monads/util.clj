@@ -42,6 +42,21 @@
         as-fn (functions/unparse-fn-like (assoc parsed :type 'fn))]
     `(def ~(with-meta (:name parsed) meta-map) (curryfn ~@(rest as-fn)))))
 
+(defn- curry* [arity f]
+  (let [args (repeatedly arity gensym)]
+    `(curryfn [~@args] (~f ~@args))))
+
+(defn ecurry
+  "Curry the function f."
+  [arity f]
+  (eval (curry* arity f)))
+
+(defmacro curry
+  "Curry the function f. The arity must be available at compile time."
+  [arity f]
+  (println arity)
+  (curry* arity f))
+
 (defn sequence-m
   "Transform a sequence of monadic values [m a] into a monadic value
    which is a sequence, m [a]."
