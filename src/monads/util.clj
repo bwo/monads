@@ -54,7 +54,6 @@
 (defmacro curry
   "Curry the function f. The arity must be available at compile time."
   [arity f]
-  (println arity)
   (curry* arity f))
 
 (defn sequence-m
