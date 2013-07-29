@@ -5,7 +5,7 @@
 
 (defmonad list-m
   (mreturn [me v] [v])
-  (bind [me m f] (mcat (comp (partial run-monad me) f) m))
+  (bind [me m f] (u/mcat (comp (partial run-monad me) f) m))
   types/MonadFail
   (fail [me msg] nil)
   types/MonadPlus
