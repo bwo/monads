@@ -25,6 +25,20 @@
                            (if (left? l)
                              (run-monad me (second lr))
                              (return l))))
+   (when (types/monadstate? inner)
+     types/MonadState
+     (get-state [me] (run-monad me (lift get-state)))
+     (put-state [me s] (run-monad me (lift (put-state s)))))
+   (when (types/monadreader? inner)
+     types/MonadReader
+     (ask [me] (run-monad me (lift ask)))
+     (local [me f m] (run-monad inner
+                                (local f (run-monad me m)))))
+   (when (types/monadwriter? inner)
+     types/MonadWriter
+     (tell [me o] (run-monad me (lift (tell o))))
+     (listen [me m] (run-monad me (lift (listen m))))
+     (pass [me m] (run-monad me (lift (pass m)))))
    types/MonadError
    (throw-error [me err] (types/mreturn inner (left err)))
    (catch-error [me comp handler]
