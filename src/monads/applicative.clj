@@ -16,7 +16,7 @@
 (def pure ->Pure)
 
 (defn cpure [arity f]
-  (pure (u/ecurry arity f)))
+  (pure (u/curry arity f)))
 
 (defprotocol Applicative
   (fapply [me f]))
