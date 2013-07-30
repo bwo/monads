@@ -26,6 +26,26 @@
    types/MonadState
    (get-state [me] (fn [s] (types/mreturn inner (Pair. s s))))
    (put-state [me v] (fn [_] (types/mreturn inner (Pair. v v))))
+
+   (when (types/monadreader? inner)
+     types/MonadReader
+     (ask [me] (fn [s] (run-state-t me (lift ask) s)))
+     (local [me f m] (fn [s] (run-monad inner
+                                       (local f (run-state-t me m s))))))
+
+   (when (types/monadwriter? inner)
+     types/MonadWriter
+     (tell [me w] (fn [s] (run-state-t me (lift (tell w)) s)))
+     (pass [me m] (fn [s] (run-state-t me (lift (pass m)) s)))
+     (listen [me m] (fn [s] (run-state-t me (lift (listen m)) s))))
+
+   (when (types/monaderror? inner)
+     types/MonadError
+     (throw-error [me e] (fn [s] (run-state-t me (lift (throw-error e)) s)))
+     (catch-error [me m h]
+                  (fn [s] (run-monad inner
+                                    (catch-error (run-state-t me m s)
+                                                 (fn [e] (run-state-t me (h e) s)))))))
    
    (when (types/monadfail? inner)
      types/MonadFail
