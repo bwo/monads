@@ -42,19 +42,22 @@
         as-fn (functions/unparse-fn-like (assoc parsed :type 'fn))]
     `(def ~(with-meta (:name parsed) meta-map) (curryfn ~@(rest as-fn)))))
 
-(defn- curry* [arity f]
-  (let [args (repeatedly arity gensym)]
-    `(curryfn [~@args] (~f ~@args))))
-
 (defn ecurry
   "Curry the function f."
   [arity f]
-  (eval (curry* arity f)))
+  (fn [& args]
+    (let [argc (count args)]
+      (if (== arity argc)
+        (apply f args)
+        (ecurry (- arity argc) (fn [& more] (apply f (concat args more))))))))
 
 (defmacro curry
-  "Curry the function f. The arity must be available at compile time."
+  "Curry the function f."
   [arity f]
-  (curry* arity f))
+  (if (number? arity)
+    (let [args (repeatedly arity gensym)]
+      `(curryfn [~@args] (~f ~@args)))
+    `(ecurry ~arity ~f)))
 
 (defn mcat [f xs]
   (lazy-seq
