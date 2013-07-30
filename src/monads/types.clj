@@ -128,9 +128,6 @@
   (toString [this]
     (with-out-str (print [fst snd]))))
 
-(defn fst [^Pair o] (.fst o))
-(defn snd [^Pair o] (.snd o))
-
 (deftype Triple [f s t]
   clojure.lang.Seqable
   (seq [_] (list f s t))
@@ -154,11 +151,15 @@
   (toString [this]
     (with-out-str (print [f s t]))))
 
-(defn fstof3 [^Triple o]
-  (.f o))
 
-(defn sndof3 [^Triple o]
-  (.s o))
+(defn fst [o]
+  (cond-instance o
+      Pair (.fst o)
+      Triple (.f o)))
+(defn snd [o]
+  (cond-instance o
+      Pair (.fst o)
+      Triple (.s o)))
 
 (defn thd [^Triple o]
   (.t o))

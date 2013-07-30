@@ -1,6 +1,6 @@
 (ns monads.rws
   (:require [monads.core :refer :all]
-            [monads.types :as types :refer [fstof3 sndof3 thd]])
+            [monads.types :as types :refer [fst snd thd]])
   (:use [monads.util :only [curryfn lazy-pair]]
         [babbage.monoid :only [<>]])
   (:import [monads.types Returned Triple]))
@@ -76,13 +76,13 @@
   types/MonadWriter
   (tell [me w] (fn [s e] (Triple. nil s w)))
   (listen [me comp] (fn [s e] (let [^Triple t (run-rws comp s e)]
-                               (Triple. [(fstof3 t) (thd t)]
-                                        (sndof3 t)
+                               (Triple. [(fst t) (thd t)]
+                                        (snd t)
                                         (thd t)))))
   (pass [me comp] (fn [s e] (let [^Triple t (run-rws comp s e)]
-                             (Triple. (first (fstof3 t))
-                                      (sndof3 t)
-                                      ((second (fstof3 t)) (thd t))))))
+                             (Triple. (first (fst t))
+                                      (snd t)
+                                      ((second (fst t)) (thd t))))))
 
   types/MonadReader
   (ask [me] (fn [s e] (Triple. e s nil)))
