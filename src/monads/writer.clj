@@ -39,6 +39,19 @@
    (when (types/monadfail? inner)
      types/MonadFail
      (fail [me msg] (types/fail inner msg)))
+   (when (types/monadstate? inner)
+     types/MonadState
+     (get-state [me] (run-monad me (lift get-state)))
+     (put-state [me o] (run-monad me (lift (put-state o)))))
+   (when (types/monadreader? inner)
+     types/MonadReader
+     (ask [me] (run-monad me (lift ask)))
+     (local [me f m] (run-monad inner (local f (run-monad me m)))))
+   (when (types/monaderror? inner)
+     types/MonadError
+     (throw-error [me e] (run-monad me (lift (throw-error e))))
+     (catch-error [me m h]) run-monad me (catch-error (run-monad me m)
+                                                      (fn [e] (run-monad me (h m)))))
    types/MonadWriter
    (tell [me w] (types/mreturn inner (Pair. nil w)))
    (listen [me c] (run-mdo inner
