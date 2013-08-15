@@ -25,6 +25,17 @@
      (tell [me w] (fn [e] (run-reader-t me (lift (tell w)) e)))
      (pass [me m] (fn [e] (run-reader-t me (lift (pass m)) e)))
      (listen [me m] (fn [e] (run-reader-t me (lift (listen m)) e))))
+   (when (types/monadstate? inner)
+     types/MonadState
+     (get-state [me] (fn [e] (run-reader-t me (lift get-state) e)))
+     (put-state [me s] (fn [e] (run-reader-t me (lift (put-state s)) e))))
+   (when (types/monaderror? inner)
+     types/MonadError
+     (throw-error [me o] (fn [e] (run-reader-t me (lift (throw-error o)) e)))
+     (catch-error [me m h]
+                  (fn [e] (run-monad inner
+                                    (catch-error (run-reader-t me m e)
+                                                 (fn [err] (run-reader-t me (h err) e)))))))
    (when (types/monadfail? inner)
      types/MonadFail
      (fail [me msg] (fn [e] (types/fail inner msg))))
