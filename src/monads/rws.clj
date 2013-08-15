@@ -45,6 +45,11 @@
    types/MonadState
    (get-state [me] (fn [s e] (types/mreturn inner (Triple. s s nil))))
    (put-state [me x] (fn [s e] (types/mreturn inner (Triple. x x nil))))
+   (when (types/monaderror? inner)
+     types/MonadError
+     (throw-error [me err] (fn [s e] (run-rws-t me (lift (throw-error err)) s e)))
+     (catch-error [me m h] (fn [s e] (run-monad inner (catch-error (run-rws-t me m s e)
+                                                                  (fn [err] (run-rws-t me (h err) s e)))))))
    (when (types/monadfail? inner)
      types/MonadFail
      (fail [me msg] (fn [s e] (types/fail inner msg))))
