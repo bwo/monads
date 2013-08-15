@@ -20,6 +20,11 @@
    types/MonadReader
    (ask [me] (fn [e] (types/mreturn inner e)))
    (local [me f m] (fn [e] (run-reader-t me m (f e))))
+   (when (types/monadwriter? inner)
+     types/MonadWriter
+     (tell [me w] (fn [e] (run-reader-t me (lift (tell w)) e)))
+     (pass [me m] (fn [e] (run-reader-t me (lift (pass m)) e)))
+     (listen [me m] (fn [e] (run-reader-t me (lift (listen m)) e))))
    (when (types/monadfail? inner)
      types/MonadFail
      (fail [me msg] (fn [e] (types/fail inner msg))))
