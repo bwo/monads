@@ -158,7 +158,7 @@
       Triple (.f o)))
 (defn snd [o]
   (cond-instance o
-      Pair (.fst o)
+      Pair (.snd o)
       Triple (.s o)))
 
 (defn thd [^Triple o]
