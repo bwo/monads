@@ -15,8 +15,8 @@
 
 (def pure ->Pure)
 
-(defn cpure [arity f]
-  (pure (u/curry arity f)))
+(defmacro cpure [arity f]
+  `(pure (u/curry ~arity ~f)))
 
 (defprotocol Applicative
   (fapply [me f]))
@@ -55,27 +55,8 @@
   [f ^Id v]
   (Id. (f (.i v))))
 
-(deftype Fold [combine start finish])
-
-(defmethod f/fmap Fold
-  [f ^Fold fold]
-  (Fold. (.combine fold) (.start fold) (comp f (.finish fold))))
-
-(defn fold [^Fold f as]
-  ((.finish f) (reduce (.combine f) (.start f) as)))
-
 (extend-protocol Applicative
 
-  Fold
-  (fapply [me o]
-    (let [[combinel startl finishl] (types/cond-instance o
-                                        Pure [(fn [_ _] nil) nil (fn [_] (.f o))]
-                                        Fold [(.combine o) (.start o) (.finish o)])
-          [combiner startr finishr] [(.combine me) (.start me) (.finish me)]]
-      (Fold. (fn [^Pair p a] (Pair. (combinel (.fst p) a) (combiner (.snd p) a)))
-             (Pair. startl startr)
-             (fn [^Pair p] ((finishl (.fst p)) (finishr (.snd p)))))))
-  
   Just
   (fapply [me o]    
     (when-let [f (types/cond-instance o
