@@ -50,8 +50,8 @@
    (when (types/monaderror? inner)
      types/MonadError
      (throw-error [me e] (run-monad me (lift (throw-error e))))
-     (catch-error [me m h]) run-monad me (catch-error (run-monad me m)
-                                                      (fn [e] (run-monad me (h m)))))
+     (catch-error [me m h] (run-monad me (catch-error (run-monad me m)
+                                                      (fn [e] (run-monad me (h m)))))))
    types/MonadWriter
    (tell [me w] (types/mreturn inner (Pair. nil w)))
    (listen [me c] (run-mdo inner
