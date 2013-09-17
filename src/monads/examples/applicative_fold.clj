@@ -28,3 +28,7 @@
 (def sum (Fold. + 0 identity))
 (def count (Fold. (fn [a _] (inc a)) 0 identity))
 (def avg (app/<*> (app/cpure 2 /) sum count))
+
+(comment
+  (= 3 (fold avg [1 2 3 4 5]))
+  (= [15 5 3] (fold (app/<*> (app/cpure 3 vector) sum count avg) [1 2 3 4 5])))
