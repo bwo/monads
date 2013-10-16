@@ -16,7 +16,7 @@
                         :state
                         :env)))
 
-(expect [[1 ()] :stage ["3"]]
+(expect [[1 ()] :state ["3"]]
         (seq (r/run-rws (listens rest (>> (tell ["3"]) (return 1))) :state :env)))
 
 (expect [[1 [2]] :state [3 2]]
