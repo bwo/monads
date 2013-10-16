@@ -1,5 +1,6 @@
 (ns monads.types
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [babbage.monoid :as m]))
 
 (set! *warn-on-reflection* true)
 
@@ -221,3 +222,9 @@
     (on-just (from-just m))
     on-nothing))
 
+(extend-protocol m/Monoid
+  clojure.lang.PersistentVector$ChunkedSeq
+  (mempty? [self] (empty? self))
+  (mempty [self] [])
+  (value [self] self)
+  (<> [self o] (concat self o)))

@@ -1,18 +1,10 @@
 (ns monads.writer
   (:require [monads.core :refer :all]
             [monads.types :as types :refer [fst snd]]
-            [monads.util :as u]
-            [babbage.monoid :as m])
+            [monads.util :as u])
   (:use [monads.util :only [lazy-pair]]
         [babbage.monoid :only [<>]])
   (:import [monads.types Returned Pair]))
-
-(extend-protocol m/Monoid
-  clojure.lang.PersistentVector$ChunkedSeq
-  (mempty? [self] (empty? self))
-  (mempty [self] [])
-  (value [self] self)
-  (<> [self o] (concat self o)))
 
 (defn writer-t [inner]
   (monad
