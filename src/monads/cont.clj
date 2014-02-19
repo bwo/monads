@@ -1,5 +1,5 @@
 (ns monads.cont
-  (:require [monads.core :refer :all :exclude [reorganize]]
+  (:require [monads.core :refer :all]
             [monads.types :as types :refer [if-instance]])
   (:use [monads.util :only [curryfn]])
   (:import [monads.types Returned Mplus Bind]))
