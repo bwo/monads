@@ -27,6 +27,30 @@
                                                                      (return 1)))
                                                        (return y))
                                         :state :env))))
+
+(expect :oops
+        (t/from-left (r/run-rws-t (r/t e/m) (mdo x <- (return 3)
+                                                  (tell [3])
+                                                  y <- (listen (mdo
+                                                                (tell [2])
+                                                                (throw-error :oops)
+                                                                (return 1)))
+                                                  (return y))
+                                  :state :env)))
+
+(expect [:ok "state" [3]]
+        (seq (t/from-right (r/run-rws-t (r/t e/m) (mdo x <- (return 3)
+                                                       (tell [3])
+                                                       (catch-error
+                                                        (mdo
+                                                         y <- (listen (mdo
+                                                                       (tell [2])
+                                                                       (throw-error :oops)
+                                                                       (return 1)))
+                                                         (return y))
+                                                        (fn [e] (>> (modify name) (return :ok)))))
+                                        :state :env))))
+
 (expect [1 :state [3 2]]
         (seq (r/run-rws (mdo x <- (return 3)
                              (tell [3])

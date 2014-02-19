@@ -13,13 +13,13 @@
 
 (defn calc [op x y msg]
   (mdo
-   (lift (tell [(str msg ": " x ", " y)]))
+   (tell [(str msg ": " x ", " y)])
    (lift-m* op (run x) (run y))))
 
 (defn decl [x y]
   (mdo v <- (run y)
        (modify #(assoc % x v))
-       (lift (tell [(str "decl " x)]))
+       (tell [(str "decl " x)])
        (return v)))
 
 (defn run [op]

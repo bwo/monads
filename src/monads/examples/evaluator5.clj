@@ -9,7 +9,7 @@
   (if (symbol? x)
     (mdo state <- get-state
          (if (not (contains? state x))
-           (lift (throw-error (str "no value for name: " x)))
+           (throw-error (str "no value for name: " x))
            (return (get state x))))
     (return x)))
 
@@ -17,13 +17,13 @@
 
 (defn calc [op x y msg]
   (mdo
-   (lift (lift (tell [(str msg ": " x ", " y)])))
+   (tell [(str msg ": " x ", " y)])
    (lift-m* op (run x) (run y))))
 
 (defn decl [x y]
   (mdo v <- (run y)
        (modify #(assoc % x v))
-       (lift (lift (tell [(str "decl " x)])))
+       (tell [(str "decl " x)])
        (return v)))
 
 (defn run [op]
