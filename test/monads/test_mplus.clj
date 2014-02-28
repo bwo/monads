@@ -4,6 +4,7 @@
             [monads.error :as e]
             [monads.maybe :as m]
             [monads.reader :as r]
+            [monads.rws :as rws]
             [monads.types :as t]
             [monads.util :as u]
             [monads.writer :as w])
@@ -57,12 +58,31 @@
                                        (tell ["hi"])
                                        (mplus (return 5) (return 6))))))
 
+(expect [[5 :state ["hi"]] [6 :state ["hi"]]]
+        (map seq (rws/run-rws-t (rws/t l/m) (mdo
+                                             (tell ["hi"])
+                                             (mplus (return 5) (return 6)))
+                                :state
+                                :env)))
+
 (expect [[5 ["hi"]] [3 ["hi"]]]
         (map seq (run-monad (w/t l/m) (mdo
                                        (tell ["hi"])
                                        x <- (mplus (return 5) (return 6))
                                        (u/guard (< x 6))
                                        (mplus (return x) (return 3))))))
+
+(expect [[5 2 ["hi"]] [3 2 ["hi"]] [1 1 nil]]
+        (map seq (rws/run-rws-t (rws/t l/m)
+                                (mplus (mdo
+                                        (tell ["hi"])
+                                        x <- (mplus (return 5) (return 6))
+                                        (u/guard (< x 6))
+                                        (modify * 2)
+                                        (mplus (return x) (return 3)))
+                                       get-state)
+                                1
+                                :env)))
 
 (expect nil
         (run-monad (w/t m/m) (mdo

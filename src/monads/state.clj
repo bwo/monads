@@ -86,15 +86,3 @@
 (def t state-t)
 (def m state-m)
 
-(defn lift-local [f m]
-  (Returned.
-   (curryfn [t s]
-     (run-monad (types/inner t)
-                (local f (run-state-t t m s))))))
-
-(defn lift-catch [m h]
-  (Returned.
-   (curryfn [t s]
-     (run-monad (types/inner t)
-                (catch-error (run-state-t t m s)
-                             (fn [e] (run-state-t t (h e) s)))))))

@@ -19,7 +19,7 @@
              (run-monad e/m)
              t/from-right))
 
-(expect -1 (->> (r/lift-catch
+(expect -1 (->> (catch-error
                  (mdo x <- ask
                       (u/mwhen (== x 0)
                                (lift (throw-error "x is zero")))
@@ -29,7 +29,7 @@
                 t/from-right))
 
 (expect [-1 ["handled"]]
-        (->> (w/lift-catch
+        (->> (catch-error
               (mdo x <- (return 0)
                    (u/mwhen (== x 0)
                             (lift (throw-error "x is zero")))
@@ -41,7 +41,7 @@
              seq))
 
 (expect [2 ["made it"]]
-        (->> (w/lift-catch
+        (->> (catch-error
               (mdo x <- (return 2)
                    (u/mwhen (== x 0)
                             (lift (throw-error "x is zero")))
@@ -53,7 +53,7 @@
              seq))
 
 (expect [-1 0]
-        (->> (s/lift-catch
+        (->> (catch-error
               (mdo x <- get-state
                    (u/mwhen (== x 0)
                             (lift (throw-error "x is zero")))
@@ -66,7 +66,7 @@
 
 
 (expect -1
-        (->> (m/lift-catch
+        (->> (catch-error
               (mdo x <- (return 0)
                    (u/mwhen (== x 0)
                             (lift (throw-error "x is zero")))
@@ -77,7 +77,7 @@
              t/from-just))
 
 (expect t/nothing?
-        (->> (m/lift-catch
+        (->> (catch-error
               (mdo x <- (return 1)
                    (u/mwhen (== x 0)
                             (lift (throw-error "x is zero")))
@@ -87,7 +87,7 @@
              t/from-right))
 
 (expect ["3" nil]
-        (->> (run-monad (w/t (m/t e/m)) (lift (m/lift-catch (lift (throw-error "3")) return)))
+        (->> (run-monad (w/t (m/t e/m)) (lift (catch-error (lift (throw-error "3")) return)))
              t/from-right
              t/from-just
              seq))

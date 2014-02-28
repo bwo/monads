@@ -66,7 +66,5 @@
                  (let [v (run-monad me comp)]
                    (either #(run-monad me (handler %)) right v)))))
 
-(def lift-local u/lift-local)
-
 (def m error-m)
 (def t error-t)

@@ -61,6 +61,3 @@
 (def m maybe-m)
 (def t maybe-t)
 
-(def lift-local u/lift-local)
-(def lift-catch u/lift-catch)
-

@@ -21,7 +21,7 @@
 (expect "zero denominator!" (t/from-left
                              (s/run-state-t (s/t e/m)
                                             (mdo x <- get-state
-                                                 (lift (safe-div 2 x)))
+                                                 (safe-div 2 x))
                                             0)))
 (expect "zero denominator!" (t/from-left
                              (s/run-state-t (s/t e/m)
@@ -32,17 +32,23 @@
         (seq (t/from-right
               (s/run-state-t (s/t e/m)
                              (mdo x <- get-state
-                                  (lift (safe-div 2 x)))
+                                  (safe-div 2 x))
                              1))))
 
 (expect "zero denominator!" (t/from-left
                              (run-monad (w/t e/m)
-                                        (lift (safe-div 2 0)))))
+                                        (safe-div 2 0))))
 
 (expect "zero denominator!" (t/from-left
                              (r/run-reader-t (r/t e/m)
-                                             (lift (safe-div 2 0))
+                                             (safe-div 2 0)
                                              0)))
+
+(expect "zero denominator!" (t/from-left
+                             (t/from-right
+                              (run-monad (e/t e/m)
+                                         (safe-div 2 0)))))
+
 (expect "zero denominator!" (t/from-left
                              (run-monad (e/t e/m)
                                         (lift (safe-div 2 0)))))
@@ -56,7 +62,7 @@
 (expect "zero denominator!" (t/from-left
                              (r/run-reader-t (r/t e/m)
                                              (s/run-state-t (s/t (r/t e/m))
-                                                            (lift (lift (safe-div 2 0)))
+                                                            (safe-div 2 0)
                                                             3)
                                              4)))
 
