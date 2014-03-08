@@ -43,7 +43,7 @@
      types/MonadError
      (throw-error [me e] (run-monad me (lift (throw-error e))))
      (catch-error [me m h] (run-monad inner (catch-error (run-monad me m)
-                                                      (fn [e] (run-monad me (h e)))))))
+                                                         (fn [e] (run-monad me (h e)))))))
    types/MonadWriter
    (tell [me w] (types/mreturn inner (Pair. nil w)))
    (listen [me c] (run-mdo inner
