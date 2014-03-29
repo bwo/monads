@@ -58,7 +58,7 @@ Implementations are provided for several monads:
 
 |Monad       |Transfomer|Example use     |Protocols      |Specific       |
 |            |provided? |case            |supported      |operations     |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |reader      |yes       |read-only access|monadreader    |`ask`          |
 |            |          |to global       |               |               |
 |            |          |environment     |               |`local`        |
@@ -69,7 +69,7 @@ Implementations are provided for several monads:
 |            |          |                |               |               |
 |            |          |                |               |               |
 |            |          |                |               |               |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |state       |yes       |simulate        |monadstate     |`get-state`    |
 |            |          |mutable state   |               |               |
 |            |          |                |               |`put-state`    |
@@ -78,7 +78,7 @@ Implementations are provided for several monads:
 |            |          |                |               |               |
 |            |          |                |               |               |
 |            |          |                |               |               |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |writer      |yes       |log messages    |monadwriter    |`tell`         |
 |            |          |during a        |               |               |
 |            |          |computation     |               |`listen`       |
@@ -95,7 +95,7 @@ Implementations are provided for several monads:
 |            |          |                |               |               |
 |            |          |                |               |               |
 |            |          |                |               |               |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |maybe       |yes       |computations    |monadfail,     |`fail`         |
 |            |          |that may fail   |monadplus      |               |
 |            |          |                |               |`mzero`        |
@@ -109,7 +109,7 @@ Implementations are provided for several monads:
 |            |          |                |               |               |
 |            |          |                |               |               |
 |            |          |                |               |               |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |error       |yes       |computations    |monadfail,     |`fail`         |
 |            |          |that may fail   |monadplus,     |               |
 |            |          |(with error     |monaderror     |`mzero`        |
@@ -119,7 +119,7 @@ Implementations are provided for several monads:
 |            |          |                |               |`throw-error`  |
 |            |          |                |               |               |
 |            |          |                |               |`catch-error`  |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |list        |no        |computations    |monadfail,     |`fail`         |
 |            |          |that may        |monadplus      |               |
 |            |          |produce zero    |               |`mzero`        |
@@ -127,19 +127,19 @@ Implementations are provided for several monads:
 |            |          |results         |               |`mplus`        |
 |            |          |                |               |               |
 |            |          |                |               |               |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |continuation|yes       |arbitrary       |(none---not yet|`shift`        |
 |            |          |manipulation    |abstracted out)|               |
 |            |          |of control;     |               |`reset`        |
 |            |          |simulate CPS    |               |               |
 |            |          |transform       |               |`callcc`       |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |rws         |yes       |inline          |monadstate,    |Everything     |
 |            |          |combination     |monadwriter,   |supported by   |
 |            |          |of reader,      |monadreader    |reader, writer,|
 |            |          |writer, and     |               |and state.     |
 |            |          |state           |               |               |
-+------------+----------+----------------+---------------+---------------+
+|------------|----------|----------------|---------------|---------------|
 |identity    |yes       |trivial monad   |(none)         |None           |
 
 
@@ -183,17 +183,17 @@ initial data):
 
 |Monad        |Run                            |Extra       |
 |             |function                       |arguments   |
-+-------------+-------------------------------+------------+
+|-------------|-------------------------------|------------|
 |`state{,-t}` |`monads.state/run-state{,-t}`  |Initial     |
 |             |                               |state       |
 |             |                               |            |
-+-------------+-------------------------------+------------+
+|-------------|-------------------------------|------------|
 |`reader{,-t}`|`monads.reader/run-reader{,-t}`|Starting    |
 |             |                               |environment |
-+-------------+-------------------------------+------------+
+|-------------|-------------------------------|------------|
 |`cont{,-t}`  |`monads.reader/run-cont{,-t`}  |Final       |
 |             |                               |continuation|
-+-------------+-------------------------------+------------+
+|-------------|-------------------------------|------------|
 |`rws{,-t}`   |`monads.rws/run-rws{,-t}`      |Initial     |
 |             |                               |state and   |
 |             |                               |starting    |
