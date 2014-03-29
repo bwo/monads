@@ -13,24 +13,4 @@
   (mplus [me lr] (concat (run-monad me (first lr))
                          (run-monad me (second lr)))))
 
-;; note that this is not always a monad.
-(defn list-t [inner]
-  (monad
-   (mreturn [me v] (types/mreturn inner [v]))
-   (bind [me m f] (run-mdo inner
-                           a <- (run-monad me m)
-                           b <- (u/sequence-m (map (comp (partial run-monad me) f) a))
-                           (return (apply concat b))))
-   types/MonadPlus
-   (mzero [me] (types/mreturn inner ()))
-   (mplus [me lr] (run-mdo inner
-                           (u/lift-m-2 concat
-                                       (run-monad me (first lr))
-                                       (run-monad me (second lr)))))
-   types/MonadTrans
-   (inner [me] inner)
-   (lift [me m] (run-monad inner (>>= m (comp return list))))))
-
-
 (def m list-m)
-(def t list-t)
