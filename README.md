@@ -183,17 +183,13 @@ initial data):
 
 |Monad        |Run                            |Extra       |
 |             |function                       |arguments   |
-|-------------|-------------------------------|------------|
 |`state{,-t}` |`monads.state/run-state{,-t}`  |Initial     |
 |             |                               |state       |
 |             |                               |            |
-|-------------|-------------------------------|------------|
 |`reader{,-t}`|`monads.reader/run-reader{,-t}`|Starting    |
 |             |                               |environment |
-|-------------|-------------------------------|------------|
 |`cont{,-t}`  |`monads.reader/run-cont{,-t`}  |Final       |
 |             |                               |continuation|
-|-------------|-------------------------------|------------|
 |`rws{,-t}`   |`monads.rws/run-rws{,-t}`      |Initial     |
 |             |                               |state and   |
 |             |                               |starting    |
