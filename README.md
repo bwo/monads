@@ -183,6 +183,7 @@ initial data):
 
 |Monad        |Run                            |Extra       |
 |             |function                       |arguments   |
+|-------------|-------------------------------|------------|
 |`state{,-t}` |`monads.state/run-state{,-t}`  |Initial     |
 |             |                               |state       |
 |             |                               |            |
