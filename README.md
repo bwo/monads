@@ -63,7 +63,7 @@ Implementations are provided for several monads:
 |writer      |yes       |log messages during a computation    |monadwriter    |`tell`, `pass`, `listen`, `listens`, `censor`         |
 |maybe       |yes       |computations may fail   |monadfail, monadplus     |`fail`, `mzero`, `mplus`         |
 |error       |yes       |computations that may fail, error handling and recovery   |monadfail, monadplus, monaderror     |`fail`, `mzero`, `mplus`, `throw-error`, `catch-error`         |
-|list        |no        |computations that may produce multiple results   |monadfail, `monadplus`     |`fail`, `mzero`, `mplus`         |
+|list        |no        |computations that may produce multiple results   |monadfail, monadplus     |`fail`, `mzero`, `mplus`         |
 |cont        |yes       |arbitrary manipulation of control, emulate CPS transform       |(none---not yet abstracted out) |`callcc`, `shift`, `reset`        |
 |rws         |yes       |inline combination of reader, writer, and state          |monadstate, monadwriter, monadreader    |union of reader, state, writer     |
 |identity    |yes       |trivial monad   |(none)         |None           |
