@@ -6,8 +6,6 @@
             [clojure.algo.generic.functor :as f])
   (:import [monads.types Just Either Mplus Returned Bind Return Pair]))
 
-(set! *warn-on-reflection* true)
-
 (deftype Pure [f]
   Object
   (toString [this]
