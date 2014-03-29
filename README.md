@@ -56,90 +56,16 @@ used to conveniently add capabilities together.
 
 Implementations are provided for several monads:
 
-|Monad       |Transfomer|Example use     |Protocols      |Specific       |
-|            |provided? |case            |supported      |operations     |
+|Monad       |Transfomer provided? |Example use case    |Protocols supported      |Specific operations      |
 |------------|----------|----------------|---------------|---------------|
-|reader      |yes       |read-only access|monadreader    |`ask`          |
-|            |          |to global       |               |               |
-|            |          |environment     |               |`local`        |
-|            |          |(with local     |               |               |
-|            |          |modifications   |               |               |
-|            |          |---think dynamic|               |               |
-|            |          |variables)      |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|------------|----------|----------------|---------------|---------------|
-|state       |yes       |simulate        |monadstate     |`get-state`    |
-|            |          |mutable state   |               |               |
-|            |          |                |               |`put-state`    |
-|            |          |                |               |               |
-|            |          |                |               |`modify`       |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|------------|----------|----------------|---------------|---------------|
-|writer      |yes       |log messages    |monadwriter    |`tell`         |
-|            |          |during a        |               |               |
-|            |          |computation     |               |`listen`       |
-|            |          |                |               |               |
-|            |          |                |               |`pass`         |
-|            |          |                |               |               |
-|            |          |                |               |`listens`      |
-|            |          |                |               |               |
-|            |          |                |               |`censor`       |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|------------|----------|----------------|---------------|---------------|
-|maybe       |yes       |computations    |monadfail,     |`fail`         |
-|            |          |that may fail   |monadplus      |               |
-|            |          |                |               |`mzero`        |
-|            |          |                |               |               |
-|            |          |                |               |`mplus`        |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|------------|----------|----------------|---------------|---------------|
-|error       |yes       |computations    |monadfail,     |`fail`         |
-|            |          |that may fail   |monadplus,     |               |
-|            |          |(with error     |monaderror     |`mzero`        |
-|            |          |messages)       |               |               |
-|            |          |                |               |`mplus`        |
-|            |          |                |               |               |
-|            |          |                |               |`throw-error`  |
-|            |          |                |               |               |
-|            |          |                |               |`catch-error`  |
-|------------|----------|----------------|---------------|---------------|
-|list        |no        |computations    |monadfail,     |`fail`         |
-|            |          |that may        |monadplus      |               |
-|            |          |produce zero    |               |`mzero`        |
-|            |          |or more         |               |               |
-|            |          |results         |               |`mplus`        |
-|            |          |                |               |               |
-|            |          |                |               |               |
-|------------|----------|----------------|---------------|---------------|
-|continuation|yes       |arbitrary       |(none---not yet|`shift`        |
-|            |          |manipulation    |abstracted out)|               |
-|            |          |of control;     |               |`reset`        |
-|            |          |simulate CPS    |               |               |
-|            |          |transform       |               |`callcc`       |
-|------------|----------|----------------|---------------|---------------|
-|rws         |yes       |inline          |monadstate,    |Everything     |
-|            |          |combination     |monadwriter,   |supported by   |
-|            |          |of reader,      |monadreader    |reader, writer,|
-|            |          |writer, and     |               |and state.     |
-|            |          |state           |               |               |
-|------------|----------|----------------|---------------|---------------|
+|reader      |yes       |read-only access to global environment |monadreader    |`ask`, `local`          |
+|state       |yes       |simulate mutable state       |monadstate     |`get-state` , `put-state`, `modify`   |
+|writer      |yes       |log messages during a computation    |monadwriter    |`tell`, `pass`, `listen`, `listens`, `censor`         |
+|maybe       |yes       |computations may fail   |monadfail, monadplus     |`fail`, `mzero`, `mplus`         |
+|error       |yes       |computations that may fail, error handling and recovery   |monadfail, monadplus, monaderror     |`fail`, `mzero`, `mplus`, `throw-error`, `catch-error`         |
+|list        |no        |computations that may produce multiple results   |monadfail, `monadplus`     |`fail`, `mzero`, `mplus`         |
+|cont        |yes       |arbitrary manipulation of control, emulate CPS transform       |(none---not yet abstracted out) |`callcc`, `shift`, `reset`        |
+|rws         |yes       |inline combination of reader, writer, and state          |monadstate, monadwriter, monadreader    |union of reader, state, writer     |
 |identity    |yes       |trivial monad   |(none)         |None           |
 
 
