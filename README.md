@@ -181,20 +181,12 @@ the above example, using `run-state-t`, suggests, there are helper
 functions for some specific monads (any of those that require extra
 initial data):
 
-|Monad        |Run                            |Extra       |
-|             |function                       |arguments   |
+|Monad        |Run function                           |Extra  arguments     |
 |-------------|-------------------------------|------------|
-|`state{,-t}` |`monads.state/run-state{,-t}`  |Initial     |
-|             |                               |state       |
-|             |                               |            |
-|`reader{,-t}`|`monads.reader/run-reader{,-t}`|Starting    |
-|             |                               |environment |
-|`cont{,-t}`  |`monads.reader/run-cont{,-t`}  |Final       |
-|             |                               |continuation|
-|`rws{,-t}`   |`monads.rws/run-rws{,-t}`      |Initial     |
-|             |                               |state and   |
-|             |                               |starting    |
-|             |                               |argument    |
+|`state{,-t}` |`monads.state/run-state{,-t}`  |Initial state    |
+|`reader{,-t}`|`monads.reader/run-reader{,-t}`|Starting environment   |
+|`cont{,-t}`  |`monads.reader/run-cont{,-t`}  |Final continuation      |
+|`rws{,-t}`   |`monads.rws/run-rws{,-t}`      |Initial state and starting argument    |
 
 `run-state`, `run-reader`, `run-cont`, and `run-rws` do not need the
 monad passed as their first argument, since it is assumed that the
