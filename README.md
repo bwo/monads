@@ -14,6 +14,17 @@ Haskell-derived: there is a special syntax for monad computations,
 selection) of monads which have implementations provided out of the
 box are influenced by the mtl.
 
+## Improvements from 0.1.0
+
+- All monad implementations interoperate with
+  `clojure.algo.generic.functor`.
+
+- Internals rewritten to be faster and more flexible.
+
+- Automatic lifting in monad transformers
+
+- Applicative functors introduced; all monads support its interface.
+
 ## Usage
 
 There are some code examples, and some benchmarks, on the
