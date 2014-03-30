@@ -152,7 +152,6 @@
   (toString [this]
     (with-out-str (print [f s t]))))
 
-
 (defn fst [o]
   (cond-instance o
       Pair (.fst o)
