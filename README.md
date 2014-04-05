@@ -25,6 +25,8 @@ box are influenced by the mtl.
 
 - Applicative functors introduced; all monads support its interface.
 
+- Combined reader/writer/state monad implementation
+
 ## Usage
 
 There are some code examples, and some benchmarks, on the
@@ -79,7 +81,7 @@ Implementations are provided for several monads:
 |rws         |yes       |inline combination of reader, writer, and state          |monadstate, monadwriter, monadreader    |union of reader, state, writer     |
 |identity    |yes       |trivial monad   |(none)         |None           |
 
-
+The specific operations are documented in [`monads.core`](https://github.com/bwo/monads/blob/master/src/monads/core.clj), or for the continuation operations, in [`monads.cont`](https://github.com/bwo/monads/blob/master/src/monads/cont.clj).
 
 The protocols are defined in `monads.types` and the functions to take advantage of them are defined in `monads.core` (with the exception of `shift` and `reset`, which are defined in `monads.cont`).
 
