@@ -301,6 +301,51 @@ monads.list> (def pythags (mdo a <- (range 1 200)
                                    mzero)
 ```
 
+## Applicative functors
+
+`monads.applicative` defines a simple applicative functor interface,
+and gives default implementations for it to all monads, as well as for
+sequences, nil, the `Just` and `Either` types defined in
+`monads.types`, and `Const` and `Id` functors also defined in
+`monads.applicative`.
+
+The applicative interface consists of `pure`, which is analogous to
+`return` for monads, and effectful function application, `<*>`. Since
+we don't assume that all arguments will be supplied immediately,
+however, the function argument to `<*>` must be curried, so that
+arguments can be fed in one by one. A convenience function `cpure` is
+supplied that takes an arity and a function and returns a curried
+function with the given arity wrapped in the Pure constructor:
+
+```clojure
+monads.applicative> (require '[monads.types :as t])
+nil
+monads.applicative> (<*> (cpure 3 +) (t/just 3) (t/just 1) (t/just 2))
+#<Just 6>
+monads.applicative> (<*> (cpure 3 +) (t/just 3) t/nothing (t/just 2))
+nil
+monads.applicative> (<*> (<*> (cpure 3 +) (t/just 3)) (t/just 1) (t/just 2))
+#<Just 6>
+```
+
+General utilities for currying functions can be found in
+`monads.util`: the macros `curryfn` and `defcurryfn` define curried
+functions, and the macro `curry` and function `ecurry` both take an
+arity and a function and create a curried function with the given
+arity. `curry` falls back to `ecurry` if the arity is not statically
+known; if it is known, `curry` is significantly faster:
+
+```clojure
+monads.util> (time (dotimes [_ 10000] ((((ecurry 3 +) 1) 2) 3)))
+"Elapsed time: 30.518729 msecs"
+nil
+monads.util> (time (dotimes [_ 10000] ((((curry 3 +) 1) 2) 3)))
+"Elapsed time: 7.261895 msecs"
+nil
+```
+
+Despite the inconvenience of manual currying, applicative functors are still useful; as an example, [`monads.examples.applicative-fold`](https://github.com/bwo/monads/blob/master/src/monads/examples/applicative_fold.clj) contains an implementation of the core of [a streaming fold abstraction](http://www.haskellforall.com/2013/08/composable-streaming-folds.html) (though for complex computations something like [babbage](https://github.com/readyforzero/babbage) might be better).
+
 ## Implementation
 
 Monads are implemented with a protocol defining a binary `mreturn` and

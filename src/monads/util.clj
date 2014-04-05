@@ -76,7 +76,9 @@
           (return ())
           (reverse ms)))
 
-(defn map-m [f args]
+(defn map-m
+  "(a -> m b) -> [a] -> m [b]"
+  [f args]
   (sequence-m (map f args)))
 
 (defmacro ^:private deflift-m-n [n]
