@@ -24,25 +24,31 @@
                                          nil))))
 
 
-(expect numbered (tn/num-tree tn/a-tree))
+;; if we just (expect numbered ...), expectations complains:
+           ;; expected: {:val 0, :left {:val 0, :left nil, :right {:val 1, :left {:val 2, :left nil, :right {:val 0, :left nil, :right nil}}, :right {:val 1, :left nil, :right {:val 3, :left nil, :right nil}}}}, :right {:val 3, :left {:val 1, :left nil, :right nil}, :right {:val 2, :left {:val 4, :left {:val 0, :left nil, :right nil}, :right nil}, :right nil}}}
+           ;;      was: {:val 0, :left {:val 0, :left nil, :right {:val 1, :left {:val 2, :left nil, :right {:val 0, :left nil, :right nil}}, :right {:val 1, :left nil, :right {:val 3, :left nil, :right nil}}}}, :right {:val 3, :left {:val 1, :left nil, :right nil}, :right {:val 2, :left {:val 4, :left {:val 0, :left nil, :right nil}, :right nil}, :right nil}}}
 
-;; for some reason, omitting the from-just and expecting (t/just
-;; numbered) doesn't work.
-(expect numbered
-        (t/from-just (s/eval-state-t (s/t m/m) (tn/number-tree tn/a-tree) {})))
+           ;; in expected, not actual: null
+           ;; in actual, not expected: null
+;; useful!
 
-(expect numbered
-        (t/from-right (s/eval-state-t (s/t e/m) (tn/number-tree tn/a-tree) {})))
+(expect (= numbered (tn/num-tree tn/a-tree)))
 
-(expect numbered
-        (t/from-just
-         (t/from-just
-          (s/eval-state-t (s/t (m/t m/m)) (tn/number-tree tn/a-tree) {}))))
+(expect (= numbered
+           (t/from-just (s/eval-state-t (s/t m/m) (tn/number-tree tn/a-tree) {}))))
 
-(expect numbered
-        (t/from-just
-         (t/from-right
-          (s/eval-state-t (s/t (m/t e/m)) (tn/number-tree tn/a-tree) {}))))
+(expect (= numbered
+           (t/from-right (s/eval-state-t (s/t e/m) (tn/number-tree tn/a-tree) {}))))
+
+(expect (= numbered
+           (t/from-just
+            (t/from-just
+             (s/eval-state-t (s/t (m/t m/m)) (tn/number-tree tn/a-tree) {})))))
+
+(expect (= numbered
+           (t/from-just
+            (t/from-right
+             (s/eval-state-t (s/t (m/t e/m)) (tn/number-tree tn/a-tree) {})))))
 
 (expect (list numbered)
         (s/eval-state-t (s/t l/m) (tn/number-tree tn/a-tree) {}))

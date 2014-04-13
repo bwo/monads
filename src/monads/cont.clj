@@ -12,7 +12,7 @@
 
 (defmonad cont-m
   (mreturn [me r] (fn [c] (Cont. c r)))
-  (bind [me m f] (fn [r] (Cont. m (fn [v] (Cont. (f v) r))))))
+  (bind [me m f] (fn [c] (Cont. m (fn [v] (Cont. (f v) c))))))
 
 ;; note: no use of m!
 (defn callcc [f]
@@ -34,10 +34,10 @@
         m))))
 
 (defn run-c [c]
-  (loop [c c f identity]
-    (if-instance Cont c
-      (recur (.c c) (.v c))
-      (f c))))
+  (run-cont (loop [c c f identity]
+              (if-instance Cont c
+                (recur (.c c) (.v c))
+                (f c)))))
 
 ;; after http://okmij.org/ftp/continuations/ContTutorial.hs, loosely.
 
@@ -45,10 +45,12 @@
   (return (run-cont c)))
 
 (defn shift [f]
-  (Returned.
-   (fn [m]
-     (fn [c]
-       (run-cont (f #(run-cont (run-c (c %)))))))))
+  (fn [c]
+    (Cont. (comp run-cont f) (fn [arg]
+                               (let [arg (if-instance Cont arg
+                                           (run-c arg)
+                                           arg)]
+                                 (c arg))))))
 
 (defn run-cont-t [m comp cont]
   (let [comp ((run-monad m comp) cont)]

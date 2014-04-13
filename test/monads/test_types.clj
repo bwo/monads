@@ -1,6 +1,6 @@
 (ns monads.test-types
   (:require [monads.types :refer :all :exclude [fail]])
-  (:use expectations)
+  (:use [expectations :exclude [nothing]])
   (:import [monads.types Pair Triple]))
 
 (expect 1 (fst (Pair. 1 2)))
