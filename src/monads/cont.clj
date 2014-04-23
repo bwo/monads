@@ -1,69 +1,91 @@
 (ns monads.cont
   (:require [monads.core :refer :all]
-            [monads.types :as types :refer [if-instance]])
+            [monads.types :as types :refer [if-instance cond-instance]])
   (:use [monads.util :only [curryfn]])
   (:import [monads.types Returned Mplus Bind]))
 
-;; this type shouldn't be exposed
-(deftype Cont [c v]
-    Object
-  (toString [this]
-    (with-out-str (print [c v]))))
-
-(defmonad cont-m
-  (mreturn [me r] (fn [c] (Cont. c r)))
-  (bind [me m f] (fn [c] (Cont. m (fn [v] (Cont. (f v) c))))))
-
-;; note: no use of m!
 (defn callcc [f]
-  (Returned. (curryfn [m c] (Cont. (f (curryfn [v _] (Cont. c v))) c))))
+  (Returned.
+   (curryfn [m c]
+     ((run-monad m (f (fn [a] (fn [_] (c a))))) c))))
+
+(set! *warn-on-reflection* true)
+
+(deftype C [v c]
+  Object
+  (toString [this]
+    (with-out-str (print [v c]))))
+(deftype Done [v]
+  Object
+  (toString [this]
+    (with-out-str (print v))))
+
+(defn tramp [cur]
+  (let [stack '()]
+    (loop [cur cur stack stack]
+      (cond-instance cur
+        Done (let [[hd & tl] stack]
+               (if (nil? hd)
+                 (.v cur)
+                 (recur (hd (.v cur)) tl)))
+        C    (recur (.v cur) (cons (.c cur) stack))))))
+
+(defn run-cont-t [m computation]
+  (tramp ((run-monad m computation) (comp ->Done return))))
 
 (defn cont-t [inner]
   (monad
-   (mreturn [me r] (fn [c] (Cont. c r)))
-   (bind [me m f] (fn [r] (Cont. m (fn [v] (Cont. (f v) r)))))
+   (mreturn [me r] (fn [k] (C. (Done. r) k)))
+   (bind [me m f] (fn [k]
+           (m (fn [a]
+                (C. (Done. (f a))
+                    (fn [cmp]
+                      (C. (Done. (run-monad me cmp))
+                          (fn [z]
+                            (z k)))))))))
    types/MonadTrans
    (inner [me] inner)
-   (lift [me m] (fn [c] (run-monad inner (>>= m c))))))
+   (lift [me m] (fn [c] 
+                  (Done. (>>= m (comp tramp c)))))))
+
+(def cont-m
+  (monad
+   (mreturn [me r] (fn [k] (C. (Done. r) k)))
+   (bind [me m f] (fn [k]
+                    (m (fn [a]
+                         (C. (Done. (f a))
+                             (fn [cmp]
+                               (C. (Done. (run-monad me cmp))
+                                   (fn [z]
+                                     (z k)))))))))))
 
 (defn run-cont [m]
-  (loop [m m c identity]
-    (let [m ((run-monad cont-m m) c)]
-      (if-instance Cont m
-        (recur (.c m) (.v m))
-        m))))
+  (tramp ((run-monad cont-m m) ->Done)))
 
-(defn run-c [c]
-  (run-cont (loop [c c f identity]
-              (if-instance Cont c
-                (recur (.c c) (.v c))
-                (f c)))))
-
-;; after http://okmij.org/ftp/continuations/ContTutorial.hs, loosely.
-
-(defn reset [c]
-  (return (run-cont c)))
+;; after http://okmij.org/ftp/continuations/ContExample.hs
 
 (defn shift [f]
-  (fn [c]
-    (Cont. (comp run-cont f) (fn [arg]
-                               (let [arg (if-instance Cont arg
-                                           (run-c arg)
-                                           arg)]
-                                 (c arg))))))
+  (Returned.
+   (fn [m]
+     (fn [c]
+       (let [r (f (comp tramp c))]
+         (Done. (if (types/monadtrans? m)
+                  (run-cont-t m r)
+                  (run-cont r))))))))
 
-(defn run-cont-t [m comp cont]
-  (let [comp ((run-monad m comp) cont)]
-    (if-instance Cont comp
-      (recur m (.c comp) (.v comp))
-      comp)))
+(defn reset [computation]
+  (Returned.
+   (fn [m]
+     (run-monad m (if (types/monadtrans? m)
+                    (lift (run-cont-t m computation))
+                    (return (run-cont computation)))))))
 
 (def t cont-t)
 (def m cont-m)
 
 (declare reorg-binds)
 
-(defn- reorg-plus [m]
+(defn reorg-plus [m]
   (if-instance Mplus m
     (let [l (.l m)
           r (.r m)]
@@ -82,7 +104,7 @@
              (return (Mplus. li ri)))))
     (return m)))
 
-(defn- reorg-binds [m]
+(defn reorg-binds [m]
   (if-instance Bind m
     (let [comp (.comp m)]
       (if-instance Bind comp
