@@ -4,7 +4,7 @@
   (:use monads.core
         monads.maybe
         [monads.types :only [from-just]]
-        [monads.util :exclude [lift-local lift-catch]]
+        monads.util
         [expectations :exclude [fail]])
   (:require [monads.identity :as i]))
 
