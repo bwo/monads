@@ -100,13 +100,7 @@
 (defn run-rws [computation state env]
   ((run-monad rws-m computation) state env))
 
-(defn lift-catch [m h]
-  (Returned.
-   (fn [t]
-     (fn [s e]
-       (run-monad (types/inner t)
-                  (catch-error (run-rws-t t m s e)
-                               (fn [err] (run-rws-t t (h err) s e))))))))
+
 
 (def t rws-t)
 (def m rws-m)
