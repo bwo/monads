@@ -81,7 +81,7 @@
   [f args]
   (sequence-m (map f args)))
 
-(defmacro ^:private deflift-m-n [n]
+(defmacro deflift-m-n [n]
   (let [nm (symbol (str "lift-m-" n))
         m-args (map #(symbol (str "m-" %)) (range 1 (inc n)))
         unwrapped-args (repeatedly n #(gensym))]
@@ -89,7 +89,7 @@
        (mdo ~@(mapcat (fn [u m] [u '<- m]) unwrapped-args m-args)
             (return (~'f ~@unwrapped-args))))))
 
-(defmacro ^:private deflift-m-ns [lo hi]
+(defmacro deflift-m-ns [lo hi]
   (when-not (== lo hi)
     `(do (deflift-m-n ~lo)
          (deflift-m-ns ~(inc lo) ~hi))))
