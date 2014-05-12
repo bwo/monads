@@ -2,8 +2,7 @@
   (:require [monads.core :refer :all]
             [monads.types :as types]
             [monads.util :as u])
-  (:use [monads.types :only [from-right from-left right left left? either]])
-  (:import [monads.types Returned Either]))
+  (:use [monads.types :only [right left left? either]]))
 
 (defn error-t [inner]
   (monad
