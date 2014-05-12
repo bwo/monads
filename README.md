@@ -48,7 +48,7 @@ of a function to monadic values) as follows:
 Since writing functions this way is cumbersome, a macro is provided
 that mimics Haskell's do-notation:
 
-```
+```clojure
 (defn lift-m-2
   "Take a function a -> b -> c and two values m a and m b, and return
   m c."
@@ -354,7 +354,7 @@ trinary `bind` operations; the additional parameter over `return` and
 `defmonad` macros which delegate to `reify`; the followuing
 definitions of the identity monad are equivalent:
 
-```
+```clojure
 (defmonad identity-m
   (mreturn [me x] x)
   (bind [me m f] (run-monad me (f m))))
