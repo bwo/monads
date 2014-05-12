@@ -81,20 +81,34 @@ Implementations are provided for several monads:
 |rws         |yes       |inline combination of reader, writer, and state          |monadstate, monadwriter, monadreader    |union of reader, state, writer     |
 |identity    |yes       |trivial monad   |(none)         |None           |
 
-The specific operations are documented in [`monads.core`](https://github.com/bwo/monads/blob/master/src/monads/core.clj), or for the continuation operations, in [`monads.cont`](https://github.com/bwo/monads/blob/master/src/monads/cont.clj).
+The specific operations are documented in
+[`monads.core`](https://github.com/bwo/monads/blob/master/src/monads/core.clj),
+or for the continuation operations, in
+[`monads.cont`](https://github.com/bwo/monads/blob/master/src/monads/cont.clj).
 
-The protocols are defined in `monads.types` and the functions to take advantage of them are defined in `monads.core` (with the exception of `shift` and `reset`, which are defined in `monads.cont`).
+The protocols are defined in `monads.types` and the functions to take
+advantage of them are defined in `monads.core` (with the exception of
+`shift` and `reset`, which are defined in `monads.cont`).
 
-If there is a transformer version of a monad, it is a function named
-by suffixing `-t` to the name of the monad; giving the function a
-monad as an argument returns a new monad. The resulting "monad
-transformer stack" supports an additional operation, `lift`, which can
-be used to run operations specific to a base monad in the stack. In
-general, explicit lifting is not necessary with the monads and
-transformers defined in this library, as the transformers will
-automatically support the operations their arguments do. Explicit
-lifting is only necessary for disambiguation if more than one monad
-supports the same operation:
+The "base" monads are named by suffixing `-m` to the names in the
+table above (e.g. `state-m`, `cont-m`). If there is a transformer
+version of a monad, it is a function named by suffixing `-t` instead
+of `-m`. The monad and transformer implementations are found in
+namespaces given by the names in the table, so, e.g., `state-m` and
+`state-t` are defined in `monads.state`. Each such namespace also
+defines vars named `m` and `t` as shortcuts, so you can refer to
+`state/m` instead of stuttering out `state/state-m`.
+
+Giving the transformer function a monad as an argument returns a new
+monad. The resulting "monad transformer stack" implements the
+MonadTrans protocol and supports two additional operation, `lift` and
+`inner`. `inner` returns the monad that was originally passed in as an
+argument; `lift` can be used to run operations specific to a base
+monad in the stack. In general, explicit lifting is not necessary with
+the monads and transformers defined in this library, as the
+transformers will automatically support the operations their arguments
+do. Explicit lifting is only necessary for disambiguation if more than
+one monad supports the same operation:
 
 ```clojure
 monads.core> (require '[monads.state :as st] '[monads.error :as e] '[monads.maybe :as m])
@@ -122,10 +136,14 @@ initial data):
 
 |Monad        |Run function                           |Extra  arguments     |
 |-------------|-------------------------------|------------|
-|`state{,-t}` |`monads.state/run-state{,-t}`  |Initial state    |
-|`reader{,-t}`|`monads.reader/run-reader{,-t}`|Starting environment   |
-|`cont{,-t}`  |`monads.reader/run-cont{,-t`}  |Final continuation      |
-|`rws{,-t}`   |`monads.rws/run-rws{,-t}`      |Initial state and starting argument    |
+|`state-{m,t}` |`monads.state/run-state{,-t}`  |Initial state    |
+|`reader-{m,t}`|`monads.reader/run-reader{,-t}`|Starting environment   |
+|`cont-{m,t}`  |`monads.reader/run-cont{,-t`}  |None*      |
+|`rws-{m,t}`   |`monads.rws/run-rws{,-t}`      |Initial state and starting argument    |
+
+(* In principle the extra argument should be the final continuation,
+but this is actually chosen by the implementation to be `return` for
+`cont-t` and `identity` for `cont-m`.)
 
 `run-state`, `run-reader`, `run-cont`, and `run-rws` do not need the
 monad passed as their first argument, since it is assumed that the
