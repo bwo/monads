@@ -4,11 +4,6 @@
   (:use [monads.util :only [curryfn]])
   (:import [monads.types Returned Mplus Bind]))
 
-(defn callcc [f]
-  (Returned.
-   (curryfn [m c]
-     ((run-monad m (f (fn [a] (fn [_] (c a))))) c))))
-
 (set! *warn-on-reflection* true)
 
 (deftype C [v c]
@@ -29,6 +24,13 @@
                  (.v cur)
                  (recur (hd (.v cur)) tl)))
         C    (recur (.v cur) (cons (.c cur) stack))))))
+
+(defn callcc [f]
+  (Returned.
+   (curryfn [m c]
+     (C. (Done. (C. (Done. (fn [a] (fn [_] (C. (Done. a) c)))) (comp ->Done f)))
+         (fn [comp]
+           ((run-monad m (tramp comp)) c))))))
 
 (defn run-cont-t [m computation]
   (tramp ((run-monad m computation) (comp ->Done return))))

@@ -187,3 +187,15 @@
                       (same-fringe? (complete 3) (complete 4))))
 
 (expect (same-fringe? (complete 3) (complete 3)))
+
+(expect -1 (c/run-cont (c/callcc (fn [k]
+                                   (fold-m (fn [acc x]
+                                             (if (zero? x)
+                                               (k -1)
+                                               (return (+ acc x))))
+                                           1
+                                           (concat (range 1 1000)
+                                                   (range)))))))
+
+(expect 3
+        (c/run-cont  (reduce (fn [acc _] (c/callcc (fn [k] acc))) (return 3) (range 100000))))
