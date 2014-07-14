@@ -1,4 +1,4 @@
-(defproject bwo/monads "0.2.1"
+(defproject bwo/monads "0.2.2"
   :description "YA monad library for clojure"
   :url "http://github.com/bwo/monads"
   :license {:name "Eclipse Public License"
