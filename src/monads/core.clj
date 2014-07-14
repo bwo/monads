@@ -62,7 +62,56 @@
 (defmacro defmonad [name & params]
   `(def ~name (monad ~@params)))
 
-(defmacro mdo [& exprs]
+(defmacro mdo
+  "Special syntax for monadic computations. An `mdo` form contains one of three kinds of elements:
+
+   - binding elements, which have the form `destructure <- expression`;
+
+   - plain elements, which are just expressions (except that they
+     cannot consist solely of the symbol `<-` or the symbol `let`;
+
+   - let elements, which can be either
+
+        let destructure1 = expression1
+            destructure2 = expression2
+            ...
+
+     or
+
+        let [destructure1 expression1
+             destructure2 expression2
+             ...]
+
+   `mdo` forms must end with a plain element.
+
+   These are rewritten into clojure.core/let expressions, and binding
+   using >>= and anonymous functions. For instance (from
+   treenumber.clj in examples):
+
+   (mdo num <- (number-node val)
+        nt1 <- (number-tree left)
+        nt2 <- (number-tree right)
+        let [new-node (node num nt1 nt2)]
+        (return new-node))
+
+   becomes
+
+   (>>= (number-node val)
+        (fn [num] (>>= (number-tree left)
+                       (fn [nt1] (>>= (number-tree right)
+                                     (fn [nt2] (let [new-node (node num nt1 nt2)]
+                                                     (return new-node))))))))
+
+   Note that plain elements can include arbitrary Clojure control or
+   binding expressions (so let expressions don't actually need to be
+   baked in); the above could also have been:
+ 
+   (mdo num <- (number-node val)
+        nt1 <- (number-tree left)
+        nt2 <- (number-tree right)
+        (let [new-node (node num nt1 nt2)]
+             (return new-node)))"
+  [& exprs]
   `(mdo/mdo >>= ~@exprs))
 
 (defmacro run-mdo [m & exprs]
