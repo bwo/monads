@@ -5,7 +5,7 @@ Yet another clojure library for monads, focussing on expressivity and correctnes
 For Leiningen:
 
 ```clojure
-[bwo/monads "0.2.0"]
+[bwo/monads "0.2.2"]
 ```
 
 The idioms and terminology for this library are unabashedly
