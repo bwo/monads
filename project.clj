@@ -6,6 +6,6 @@
   :dependencies [[org.clojure/clojure "1.5.0"]
                  [org.clojure/algo.generic "0.1.1"]
                  [the/parsatron "0.0.4"]
-                 [bwo/macroparser "0.0.7b"]
+                 [bwo/macroparser "0.0.7c"]
                  [readyforzero/babbage "1.0.1"]
                  [expectations "2.0.0"]])
